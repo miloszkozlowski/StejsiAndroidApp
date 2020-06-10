@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">StejsiApp</string>
+    <string name="input_email_req">Podaj swój adres e-mail:</string>
+    <string name="main_logo">Main logo</string>
+    <string name="input_email_hint">Nalezy podać adres e-mail, który został wcześniej zakomunikowany do Trenera personalnego.</string>
+    <string name="register">Zarejestruj</string>
+    <string name="error_registration_wrong_email">Rejestracja nie mogła zostać przeprowadzona. Podany adres e-mail nie jest autoryzowany przez Twojego trenera personalnego.</string>
+    <string name="info_registration_activate">Na podany adres e-mail został wysłany e-mail z prośbą o aktywację konta. Odbierz wiaodmość e-mail i kliknij na link w niej zawarty, następnie wróć do aplikacji potwierdź adres e-mail i kliknij \"Zaloguj\"</string>
+    <string name="error_unexpected">Wystąpił nieoczekiwany błąd. Prawdopodobnie serwer Trenera Personalnego nie odpowiada. Spróbuj później.</string>
+    <string name="error_no_server_connection">Mamy problem z połączeniem z serwerem. Spróbuj koniecznie później.</string>
+    <string name="error_no_internet_connection">Nie masz połączenia z internetem. Sprawdź połączenie i spróbuj jeszcze raz</string>
+    <string name="info_activation_email_sent">Na Twój adres e-mail został wysłany e-mail z prośbą o potwierdzenie aktywacji konta na tym urządzeniu. Odbierz pocztę, kliknij w link i wróć do aplikacji, aby jej używać.</string>
+    <string name="info_activation_email_sent_new_device">Jesteś już zarejestrowany na innym urządzeniu. Możesz korzystać z aplikacji również na tym - wysłaliśmy Ci e-mail z linkiem aktywacyjnym. Sprawdź pocztę i wróć.</string>
+    <string name="repeat_registration"><u>Powtórz rejestrację</u></string>
+    <string name="info_repeated_registration_message">Ponowna rejestracja sprawi, że wysłany wcześniej link utraci ważność. Jeżeli nie e-mail z linkiem aktywacyjnym nie dotarł, sprawdź w pierwszej kolejności folder SPAM.</string>
+    <string name="error_allowed_registration_attemps_exceeded">Przekroczono dowzwoloną ilość prób rejestracji z tego urządzenia. Spróbuj ponownie za godzinę.</string>
+    <string name="info_still_watinitg_for_activation">Czekamy na Ciebie dalej! <b>Kliknij w link zawarty w wiadomości e-mail, którą do Ciebie wysłaliśmy</b>, a następnie dotknij "Kontynuuj".</string>
+    <string name="continue_button">Kontynuuj</string>
+    <string name="info_still_not_active">Konto w dalszym ciągu nie jest aktywne...</string>
+</resources>
