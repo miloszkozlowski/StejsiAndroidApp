@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
+
+        <item
+            android:id="@+id/refreshMenuBtn"
+            android:icon="@drawable/ic_refresh_white_48dp"
+            android:title="@string/menu_refresh"
+            android:contentDescription="@string/menu_refresh"
+            app:showAsAction="never" />
+
+        <item
+            android:id="@+id/profileMenuBtn"
+            android:icon="@drawable/baseline_face_white_48"
+            android:title="@string/profile"
+            android:contentDescription="@string/profile_ext"
+            app:showAsAction="ifRoom" />
+
+        <item
+            android:id="@+id/aboutMenuBtn"
+            android:title="@string/about"
+            android:contentDescription="@string/about_ext"
+            app:showAsAction="never" />
 
 </menu>

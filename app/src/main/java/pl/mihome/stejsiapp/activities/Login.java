@@ -275,7 +275,7 @@ public class Login extends AppCompatActivity {
                             String emailAuthorised = response.getString("email");
                             if(emailAuthorised.equals(currentEmail))
                             {
-                                Intent intent = new Intent(Login.this, MainPageActivity.class);
+                                Intent intent = new Intent(Login.this, LoaderActivity.class);
                                 intent.putExtra(StartActivity.TOKEN, currentToken);
                                 intent.putExtra(StartActivity.EMAIL, currentEmail);
                                 startActivity(intent);

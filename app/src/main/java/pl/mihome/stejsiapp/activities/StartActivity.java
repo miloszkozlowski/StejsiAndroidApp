@@ -35,6 +35,7 @@ public class StartActivity extends AppCompatActivity {
     public static final String ERROR_400 = "ERROR400";
 
     private boolean isConnected;
+
     private Token currentToken;
     private String currentEmail;
 
@@ -42,7 +43,7 @@ public class StartActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setTheme(R.style.AppTheme);
+
 
         ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
@@ -82,7 +83,7 @@ public class StartActivity extends AppCompatActivity {
                                 String emailAuthorised = response.getString("email");
                                 if(emailAuthorised.equals(currentEmail))
                                 {
-                                    Intent intent = new Intent(StartActivity.this, MainPageActivity.class);
+                                    Intent intent = new Intent(StartActivity.this, LoaderActivity.class);
                                     intent.putExtra(TOKEN, currentToken);
                                     intent.putExtra(EMAIL, currentEmail);
                                     startActivity(intent);
@@ -108,5 +109,9 @@ public class StartActivity extends AppCompatActivity {
                         }
                     });
         }
+    }
+
+    public Token getCurrentToken() {
+        return currentToken;
     }
 }

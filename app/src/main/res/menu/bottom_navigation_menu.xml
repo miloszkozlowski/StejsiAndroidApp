@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/homeMenuBtn"
+        android:enabled="true"
+        android:icon="@drawable/baseline_home_white_48"
+        android:title="@string/home"/>
+
+    <item
+        android:id="@+id/treningBtn"
+        android:enabled="true"
+        android:icon="@drawable/ic_fitness_white_48dp"
+        android:title="Treningi"/>
+
+    <item
+        android:id="@+id/tipsBtn"
+        android:enabled="true"
+        android:icon="@drawable/ic_tips_white_48dp"
+        android:title="Mądrości"/>
 
 </menu>

@@ -8,4 +8,5 @@
     <color name="colorRed">#F44336</color>
     <color name="colorText">#373438</color>
     <color name="colorGray">#A0A0A0</color>
+    <color name="cardBackground">#1ACECBD0</color>
 </resources>
