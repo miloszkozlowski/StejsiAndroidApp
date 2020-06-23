@@ -7,7 +7,6 @@ import android.view.MenuItem;
 import android.widget.TextView;
 
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -17,10 +16,16 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.error.ANError;
+import com.androidnetworking.interfaces.OkHttpResponseAndJSONObjectRequestListener;
 import com.androidnetworking.interfaces.OkHttpResponseAndParsedRequestListener;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -30,6 +35,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import model.recyclerViews.MainViewElement;
@@ -50,6 +56,7 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
     private Token currentToken;
     private User currentUser;
     private String currentTime;
+    private List<Tip> currentTipsList;
 
 
     private MaterialToolbar toolbar;
@@ -69,6 +76,8 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
         if(currentUser == null) {
             currentUser = (User) getIntent().getExtras().get(LoaderActivity.USER);
             currentTime = (String) getIntent().getExtras().get(LoaderActivity.CURRENT_TIME_HEADER);
+            Bundle bundle = getIntent().getBundleExtra(LoaderActivity.TIPS_BUNDLE);
+            currentTipsList = (List<Tip>)bundle.getSerializable(LoaderActivity.TIPS_LIST);
         }
         currentLocale = getResources().getConfiguration().getLocales().get(0);
 
@@ -79,7 +88,7 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
         mainRecyclerView = findViewById(R.id.mainPageList);
         swipeRefreshLayout = findViewById(R.id.swipeLayout);
 
-        swipeRefreshLayout.setOnRefreshListener(this);
+
 
         toolbar.setSubtitle(currentUser.getImie() + " " + currentUser.getNazwisko());
 
@@ -90,6 +99,8 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
     private void initMainView() {
         mainViewItems = loadItemsForView();
         initTopMenu();
+        swipeRefreshLayout.setOnRefreshListener(this);
+        swipeRefreshLayout.setProgressViewOffset(true, 100, 200);
         initMainListView(mainViewItems, currentLocale);
 
 
@@ -97,7 +108,9 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
 
     private ArrayList<MainViewElement> loadItemsForView() {
         ArrayList<MainViewElement> list = new ArrayList<>();
-        list.add(new Tip("Zrób kilka pompek!", "Na trenngu zrobisz tyle, że zginiesz, więc juz teraz po dobroci kładź się i rób!", "https://scontent.fymy1-2.fna.fbcdn.net/v/t1.0-9/p720x720/92655025_550205392154822_5051416843344936960_o.jpg?_nc_cat=111&_nc_sid=2d5d41&_nc_ohc=K5BGqE4qvgcAX9wJC5M&_nc_ht=scontent.fymy1-2.fna&_nc_tp=6&oh=886d8a80884d962c22636cf92ec66e41&oe=5EF304CF"));
+        Optional<Tip> newestTip = currentTipsList.stream().sorted(Comparator.comparing(Tip::getWhenCreated).reversed()).findFirst();
+        if(newestTip.isPresent())
+            list.add(newestTip.get());
         list.addAll(currentUser.getTrainingPackages().stream()
                 .flatMap(p -> p.getTrainings().stream())
                 .map(TrainingForPresenceConfirmation::new)
@@ -182,10 +195,17 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
                 .addHeaders("token", currentToken.getTokenString())
                 .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
                 .build()
-                .getAsOkHttpResponseAndObject(User.class, new OkHttpResponseAndParsedRequestListener<User>() {
+                .getAsOkHttpResponseAndJSONObject(new OkHttpResponseAndJSONObjectRequestListener() {
                     @Override
-                    public void onResponse(Response okHttpResponse, User response) {
-                        currentUser = response;
+                    public void onResponse(Response okHttpResponse, JSONObject response) {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        try {
+                            currentUser = objectMapper.readValue(response.getString("user"), User.class);
+                            currentTipsList = objectMapper.readValue(response.getString("tips"), new TypeReference<List<Tip>>() {});
+                        }
+                        catch(JSONException | JsonProcessingException ex) {
+                            ex.printStackTrace();
+                        }
                         currentTime = okHttpResponse.header(LoaderActivity.CURRENT_TIME_HEADER);
                         mainViewItems = loadItemsForView();
                         mainRecyclerView.setAdapter(new MainViewAdapter(getApplicationContext(), mainViewItems, currentLocale, currentToken, findViewById(R.id.mainPageList)));

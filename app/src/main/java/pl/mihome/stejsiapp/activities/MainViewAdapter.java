@@ -210,9 +210,20 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         public void bind(Tip tip) {
 
-            header.setText(tip.getTitle());
-            bodyText.setText(tip.getBodyText());
-            Picasso.with(itemView.getContext()).load(tip.getImageUrl()).into(image);
+            header.setText(tip.getHeading());
+            bodyText.setText(tip.getBody());
+            if(tip.isLocalImagePresent()) {
+
+            }
+            else if(tip.getImageUrl() != null) {
+                if(!tip.getImageUrl().isEmpty())
+                    Picasso.with(itemView.getContext()).load(tip.getImageUrl()).into(image);
+                else
+                    image.setVisibility(View.GONE);
+            }
+
+            else
+                image.setVisibility(View.GONE);
 
 
         }

@@ -7,45 +7,51 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/topAppBar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="@string/app_title"
-            app:menu="@menu/top_app_bar"
-            style="@style/Widget.MaterialComponents.Toolbar.Primary"
-            android:elevation="3dp"
-            />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
 
-
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipeLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+
+            >
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/mainPageList"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:layout_behavior="@string/appbar_scrolling_view_behavior">
+                app:layout_behavior="@string/appbar_scrolling_view_behavior"
+                >
 
 
             </androidx.recyclerview.widget.RecyclerView>
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="0dp">
+
+
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/topAppBar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:title="@string/app_title"
+                app:menu="@menu/top_app_bar"
+                style="@style/Widget.MaterialComponents.Toolbar.Primary"
+                android:elevation="0dp"
+                app:layout_scrollFlags="scroll|enterAlways|snap"
+                />
+        </com.google.android.material.appbar.AppBarLayout>
+
+
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

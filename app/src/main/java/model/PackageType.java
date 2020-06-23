@@ -1,9 +1,12 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Set;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PackageType implements Serializable {
 
     private Long id;
