@@ -102,9 +102,8 @@
                     android:id="@+id/mainViewPresentButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
                     android:text="@string/presence_present"
-                    style="?attr/borderlessButtonStyle"
+                    android:layout_margin="8dp"
                     />
             </LinearLayout>
 

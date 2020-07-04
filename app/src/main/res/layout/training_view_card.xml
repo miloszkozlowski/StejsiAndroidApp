@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <com.google.android.material.card.MaterialCardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_margin="8dp"
+        app:cardElevation="4dp"
+        app:cardForegroundColor="@color/cardBackground"
+        android:animateLayoutChanges="true">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/trainingICardClickablePart"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:id="@+id/trainingCardTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        android:text="Nowy pakiet treningów"
+                        android:textAppearance="?attr/textAppearanceHeadline6"
+                        android:paddingRight="8dp"/>
+
+                    <ImageView
+                        android:id="@+id/trainingCardDot"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:src="@drawable/ic_dot_green_16dp"
+                        app:layout_constraintStart_toEndOf="@id/trainingCardTitle"
+                        app:layout_constraintTop_toTopOf="@id/trainingCardTitle"
+                        app:layout_constraintBottom_toBottomOf="@id/trainingCardTitle"
+                        />
+
+                    <ImageView
+                        android:id="@+id/trainingCardPaid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintEnd_toStartOf="@id/trainingCardTrainingDone"
+                        app:layout_constraintBottom_toBottomOf="@id/trainingCardTitle"
+                        app:layout_constraintTop_toTopOf="parent"
+                        android:src="@drawable/ic_attach_money_black_16dp"/>
+
+                    <ImageView
+                        android:id="@+id/trainingCardNotPaid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintEnd_toStartOf="@id/trainingCardTrainingDone"
+                        app:layout_constraintBottom_toBottomOf="@id/trainingCardTitle"
+                        app:layout_constraintTop_toTopOf="parent"
+                        android:src="@drawable/ic_money_off_black_16dp"/>
+
+                    <TextView
+                        android:id="@+id/trainingCardAmountToBePaid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:textColor="@color/colorGray"
+                        app:layout_constraintStart_toStartOf="parent"
+                        android:paddingBottom="8dp"
+                        app:layout_constraintTop_toBottomOf="@id/trainingCardTitle"/>
+
+
+                    <ImageView
+                        android:id="@+id/trainingCardTrainingDone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/ic_check_circle_black_16dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toBottomOf="@id/trainingCardTitle"
+                        app:layout_constraintTop_toTopOf="parent"
+                        android:visibility="gone"/>
+
+
+                    <TextView
+                        android:id="@+id/trainingCardDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:paddingBottom="8dp"
+                        app:layout_constraintTop_toBottomOf="@id/trainingCardAmountToBePaid"
+                        app:layout_constraintStart_toStartOf="parent"/>
+
+                    <TextView
+                        android:id="@+id/trainingCardValidDue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:paddingBottom="8dp"
+                        app:layout_constraintTop_toBottomOf="@id/trainingCardDesc"
+                        app:layout_constraintStart_toStartOf="parent"/>
+
+                    <TextView
+                        android:id="@+id/trainingCardAmount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/trainings_amount"
+                        app:layout_constraintTop_toBottomOf="@id/trainingCardValidDue"
+                        app:layout_constraintStart_toStartOf="parent" />
+
+                    <TextView
+                        android:id="@+id/trainingCardAmountDone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/trainings_done_amount"
+                        app:layout_constraintTop_toBottomOf="@id/trainingCardValidDue"
+                        app:layout_constraintStart_toEndOf="@id/trainingCardAmount"
+                        android:layout_marginStart="8dp"/>
+
+                    <ImageButton
+                        android:id="@+id/trainingCardExpandMoreBtn"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_expand_more_black_24dp"
+                        android:backgroundTint="@android:color/transparent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+
+                    <ImageButton
+                        android:id="@+id/trainingCardExpandLessBtn"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_expand_less_black_24dp"
+                        android:visibility="gone"
+                        android:backgroundTint="@android:color/transparent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/trainingCardExpandable"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="parent">
+
+                    <LinearLayout
+                        android:id="@+id/trainingCardItemsView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        android:orientation="vertical">
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/trainingCardAmountLeftToPlan"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/trainingCardItemsView"
+                        android:padding="8dp"
+                        android:visibility="gone"
+                        />
+
+
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+            </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>

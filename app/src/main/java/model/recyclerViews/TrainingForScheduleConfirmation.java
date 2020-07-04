@@ -1,6 +1,6 @@
 package model.recyclerViews;
 
-import java.time.LocalDateTime;
+import org.threeten.bp.LocalDateTime;
 
 import model.Training;
 import model.TrainingLocation;
@@ -17,6 +17,8 @@ public class TrainingForScheduleConfirmation implements MainViewElement {
     private TrainingPackage trainingPackage;
     private TrainingLocation location;
 
+    private Training training;
+
     public TrainingForScheduleConfirmation(Training training) {
         this.id = training.getId();
         this.markedAsDone = training.getMarkedAsDone();
@@ -25,6 +27,8 @@ public class TrainingForScheduleConfirmation implements MainViewElement {
         this.presenceConfirmedByUser = training.getPresenceConfirmedByUser();
         this.trainingPackage = training.getTrainingPackage();
         this.location = training.getLocation();
+
+        this.training = training;
     }
 
     public long getId() {
@@ -65,6 +69,10 @@ public class TrainingForScheduleConfirmation implements MainViewElement {
 
     public boolean isPresenceConfirmed() {
         return presenceConfirmedByUser != null;
+    }
+
+    public Training getTrainingSource() {
+        return training;
     }
 
     @Override

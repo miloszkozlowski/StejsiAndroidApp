@@ -99,13 +99,22 @@ public class StartActivity extends AppCompatActivity {
                         @Override
                         public void onError(ANError anError) {
                             String email = sharedPreferences.getString(EMAIL, "");
-                            intentLogin.putExtra(EMAIL, email);
-                            if(anError.getErrorCode() == 400)
-                                intentLogin.putExtra(ERROR_400, true);
-                            else
-                                intentLogin.putExtra(ERROR_400, false);
-                            startActivity(intentLogin);
-                            StartActivity.this.finish();
+                            if(anError.getErrorCode() == 401) {
+                                SharedPreferences sharedPreferences = getSharedPreferences(StartActivity.LOGIN_DATA, MODE_PRIVATE);
+                                sharedPreferences.edit().clear().apply();
+                                Intent newLogin = new Intent(StartActivity.this, Login.class);
+                            }
+                            else {
+                                intentLogin.putExtra(EMAIL, email);
+                                if (anError.getErrorCode() == 400) {
+                                    intentLogin.putExtra(ERROR_400, true);
+                                } else
+                                    intentLogin.putExtra(ERROR_400, false);
+
+
+                                startActivity(intentLogin);
+                                StartActivity.this.finish();
+                            }
                         }
                     });
         }

@@ -1,12 +1,10 @@
 package model.recyclerViews;
 
-
-import java.time.LocalDateTime;
+import org.threeten.bp.LocalDateTime;
 
 import model.Training;
 import model.TrainingLocation;
 import model.TrainingPackage;
-import pl.mihome.stejsiapp.activities.MainViewAdapter;
 
 public class TrainingForPresenceConfirmation implements MainViewElement {
 
@@ -18,6 +16,7 @@ public class TrainingForPresenceConfirmation implements MainViewElement {
     private LocalDateTime presenceConfirmedByUser;
     private TrainingPackage trainingPackage;
     private TrainingLocation location;
+    private Training training;
 
     public TrainingForPresenceConfirmation(Training training) {
         this.id = training.getId();
@@ -27,6 +26,7 @@ public class TrainingForPresenceConfirmation implements MainViewElement {
         this.presenceConfirmedByUser = training.getPresenceConfirmedByUser();
         this.trainingPackage = training.getTrainingPackage();
         this.location = training.getLocation();
+        this.training = training;
     }
 
     public long getId() {
@@ -67,6 +67,10 @@ public class TrainingForPresenceConfirmation implements MainViewElement {
 
     public boolean isPresenceConfirmed() {
         return presenceConfirmedByUser != null;
+    }
+
+    public Training getTrainingSource() {
+        return training;
     }
 
     @Override

@@ -7,13 +7,13 @@
         android:title="@string/home"/>
 
     <item
-        android:id="@+id/treningBtn"
+        android:id="@+id/trainingMenuBtn"
         android:enabled="true"
         android:icon="@drawable/ic_fitness_white_48dp"
-        android:title="Treningi"/>
+        android:title="@string/trainings"/>
 
     <item
-        android:id="@+id/tipsBtn"
+        android:id="@+id/tipsMenuBtn"
         android:enabled="true"
         android:icon="@drawable/ic_tips_white_48dp"
         android:title="Mądrości"/>

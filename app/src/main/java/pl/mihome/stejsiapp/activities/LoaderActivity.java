@@ -17,6 +17,7 @@ import com.androidnetworking.interfaces.OkHttpResponseAndJSONObjectRequestListen
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.android.material.button.MaterialButton;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,6 +25,8 @@ import org.json.JSONObject;
 import java.io.Serializable;
 import java.util.List;
 
+import app.StejsiApplication;
+import model.MainBundleBuilder;
 import model.Tip;
 import model.Token;
 import model.User;
@@ -33,16 +36,21 @@ import pl.mihome.stejsiapp.R;
 public class LoaderActivity extends AppCompatActivity {
 
     public static final String USER = "USER";
+    public static final String USER_RANK = "USER_RANK";
     public static final String TIPS_BUNDLE = "TIPS";
     public static final String CURRENT_TIME_HEADER = "current_time";
     public static final String TIPS_LIST = "TIPS_LIST";
     private TextView waitTxt;
     private ProgressBar progressBar;
+    private MaterialButton tryAgainBtn;
 
     private Token currentToken;
     private User currentUser;
     private String currentTime;
+    private String currentRank;
     private List<Tip> currentTipsList;
+
+    private StejsiApplication app;
 
 
     @Override
@@ -50,9 +58,11 @@ public class LoaderActivity extends AppCompatActivity {
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.loader_view);
+        app = (StejsiApplication)getApplication();
 
         waitTxt = findViewById(R.id.wait_txt);
         progressBar = findViewById(R.id.loader_progress);
+        tryAgainBtn = findViewById(R.id.loaderTryAgainBtn);
 
         currentToken = (Token) getIntent().getExtras().get(StartActivity.TOKEN);
         startWaiting();
@@ -74,6 +84,7 @@ public class LoaderActivity extends AppCompatActivity {
                             try {
                                 currentUser = objectMapper.readValue(response.getString("user"), User.class);
                                 currentTipsList = objectMapper.readValue(response.getString("tips"), new TypeReference<List<Tip>>() {});
+                                currentRank = response.getString("rank");
                             }
                             catch(JSONException | JsonProcessingException ex) {
                                 ex.printStackTrace();
@@ -86,7 +97,15 @@ public class LoaderActivity extends AppCompatActivity {
                     @Override
                     public void onError(ANError anError) {
                         anError.getErrorBody();
-                        //TODO: dopisać xo się ma dziać, gdy brak dostępu/lub unauthorized
+                        tryAgainBtn.setVisibility(View.VISIBLE);
+                        tryAgainBtn.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                tryAgainBtn.setVisibility(View.GONE);
+                                startWaiting();
+                                loadUserData();
+                            }
+                        });
                     }
                 });
     }
@@ -117,12 +136,15 @@ public class LoaderActivity extends AppCompatActivity {
 
     private void closeActivity() {
         Intent intent = new Intent(LoaderActivity.this, MainPageActivity.class);
-        intent.putExtra(USER, currentUser);
-        intent.putExtra(StartActivity.TOKEN, currentToken);
-        intent.putExtra(CURRENT_TIME_HEADER, currentTime);
-        Bundle bundle = new Bundle();
-        bundle.putSerializable(TIPS_LIST, (Serializable)currentTipsList);
-        intent.putExtra(TIPS_BUNDLE, bundle);
+        Bundle bundleOfTips = new Bundle();
+        bundleOfTips.putSerializable(TIPS_LIST, (Serializable)currentTipsList);
+        app.setMainBundle(MainBundleBuilder.getCurrentBundle(currentUser, currentRank, currentToken, currentTime, bundleOfTips));
+//        intent.putExtra(USER, currentUser);
+//        intent.putExtra(USER_RANK, currentRank);
+//        intent.putExtra(StartActivity.TOKEN, currentToken);
+//        intent.putExtra(CURRENT_TIME_HEADER, currentTime);
+//
+//        intent.putExtra(TIPS_BUNDLE, bundleOfTips);
         startActivity(intent);
         finish();
     }

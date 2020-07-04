@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
+
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -16,16 +17,16 @@
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipeLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-
-            >
+            android:layout_height="match_parent">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/mainPageList"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior"
-                >
+                android:clipToPadding="false"
+                android:fitsSystemWindows="false"
+                android:paddingTop="56dp">
 
 
             </androidx.recyclerview.widget.RecyclerView>
@@ -47,8 +48,8 @@
                 app:menu="@menu/top_app_bar"
                 style="@style/Widget.MaterialComponents.Toolbar.Primary"
                 android:elevation="0dp"
-                app:layout_scrollFlags="scroll|enterAlways|snap"
-                />
+                app:layout_scrollFlags="scroll|enterAlways|snap"/>
+
         </com.google.android.material.appbar.AppBarLayout>
 
 

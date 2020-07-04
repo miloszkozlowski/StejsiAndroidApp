@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:padding="4dp">
+
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/trainingCard"
+            android:theme="@style/Theme.MaterialComponents.Light"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardForegroundColor="@color/commentBackground"
+            app:cardCornerRadius="10dp" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="4dp"
+                        android:layout_weight="1">
+
+                            <TextView
+                                android:id="@+id/trainingItemDate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="20 czerwca 2020 18:00"
+                                android:textStyle="bold"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"/>
+
+                            <TextView
+                                android:id="@+id/trainingItemStatus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="wykonany"
+                                android:textColor="@color/colorGray"
+                                app:layout_constraintTop_toBottomOf="@id/trainingItemDate"
+                                app:layout_constraintStart_toStartOf="parent"/>
+
+
+                            <TextView
+                                android:id="@+id/trainingItemLocationAndLength"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="(55 minut)"
+                                app:layout_constraintTop_toBottomOf="@id/trainingItemStatus"
+                                app:layout_constraintStart_toStartOf="parent"/>
+
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                   <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="120dp"
+                    android:layout_height="match_parent">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/trainingItemCnfPresenceBtn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            android:layout_marginHorizontal="8dp"
+                            android:text="@string/presence_present"
+                            android:visibility="gone"/>
+
+                       <com.google.android.material.button.MaterialButton
+                           android:id="@+id/trainingItemCnfScheduleBtn"
+                           android:layout_width="wrap_content"
+                           android:layout_height="wrap_content"
+                           app:layout_constraintTop_toTopOf="parent"
+                           app:layout_constraintBottom_toBottomOf="parent"
+                           app:layout_constraintStart_toStartOf="parent"
+                           app:layout_constraintEnd_toEndOf="parent"
+                           android:layout_marginHorizontal="8dp"
+                           android:text="@string/confirming_schedule"
+                           android:visibility="gone"/>
+
+                       <ImageButton
+                           android:id="@+id/trainingCardPopUpMenuBtn"
+                           android:layout_width="wrap_content"
+                           android:layout_height="wrap_content"
+                           app:layout_constraintTop_toTopOf="parent"
+                           app:layout_constraintBottom_toBottomOf="parent"
+                           app:layout_constraintEnd_toEndOf="parent"
+                           android:src="@drawable/ic_more_vert_black_36dp"
+                           android:layout_marginHorizontal="4dp"
+                           android:background="@android:color/transparent"
+                           android:visibility="gone"/>
+
+                       <ProgressBar
+                           android:id="@+id/trainingCardItemProgressBar"
+                           android:layout_width="wrap_content"
+                           android:layout_height="wrap_content"
+                           android:visibility="gone"
+                           app:layout_constraintTop_toTopOf="parent"
+                           app:layout_constraintBottom_toBottomOf="parent"
+                           app:layout_constraintEnd_toEndOf="parent"
+                           app:layout_constraintStart_toStartOf="parent"/>
+
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>

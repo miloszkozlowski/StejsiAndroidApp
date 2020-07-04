@@ -1,13 +1,20 @@
 package model;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.datatype.threetenbp.deser.LocalDateTimeDeserializer;
+
+import org.threeten.bp.LocalDateTime;
+
 import java.io.Serializable;
 
-class TipComment implements Serializable {
+public class TipComment implements Serializable {
 
     private Long id;
-    private Tip tip;
-    private User author;
+    private String authorName;
+    private Long authorId;
     private String body;
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    private LocalDateTime whenCreated;
 
     public TipComment() {
     }
@@ -20,20 +27,20 @@ class TipComment implements Serializable {
         this.id = id;
     }
 
-    public Tip getTip() {
-        return tip;
+    public String getAuthorName() {
+        return authorName;
     }
 
-    public void setTip(Tip tip) {
-        this.tip = tip;
+    public void setAuthorName(String authorName) {
+        this.authorName = authorName;
     }
 
-    public User getAuthor() {
-        return author;
+    public Long getAuthorId() {
+        return authorId;
     }
 
-    public void setAuthor(User author) {
-        this.author = author;
+    public void setAuthorId(Long authorId) {
+        this.authorId = authorId;
     }
 
     public String getBody() {
@@ -42,5 +49,13 @@ class TipComment implements Serializable {
 
     public void setBody(String body) {
         this.body = body;
+    }
+
+    public LocalDateTime getWhenCreated() {
+        return whenCreated;
+    }
+
+    public void setWhenCreated(LocalDateTime whenCreated) {
+        this.whenCreated = whenCreated;
     }
 }

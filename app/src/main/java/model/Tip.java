@@ -1,10 +1,11 @@
 package model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.threetenbp.deser.LocalDateTimeDeserializer;
+
+import org.threeten.bp.LocalDateTime;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Set;
 
 import model.recyclerViews.MainViewElement;
@@ -15,10 +16,13 @@ public class Tip implements MainViewElement, Serializable {
     private String body;
     private String heading;
     private String imageUrl;
-    private Set<TipComment> comments;
     private boolean localImagePresent;
+    private Set<TipComment> comments;
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime whenCreated;
+    private TipReadStatus tipStatusByUser;
+
+
 
     public Tip() {
     }
@@ -78,6 +82,16 @@ public class Tip implements MainViewElement, Serializable {
     public void setWhenCreated(LocalDateTime whenCreated) {
         this.whenCreated = whenCreated;
     }
+
+    public TipReadStatus getTipStatusByUser() {
+        return tipStatusByUser;
+    }
+
+    public void setTipStatusByUser(TipReadStatus tipStatusByUser) {
+        this.tipStatusByUser = tipStatusByUser;
+    }
+
+
 
     @Override
     public int getModelType() {

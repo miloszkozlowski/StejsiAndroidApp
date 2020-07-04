@@ -8,6 +8,8 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="actionOverflowMenuStyle">@style/Widget.MaterialComponents.PopupMenu.Overflow</item>
+        <item name="popupMenuStyle">@style/Widget.MaterialComponents.PopupMenu</item>
     </style>
 
     <style name="CommonButton">
@@ -40,6 +42,11 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
+    <style name="PopUpMenuCustom" parent="android:Widget.Material.PopupMenu">
+            <item name="backgroundTint">@color/cardview_dark_background</item>
+    </style>
+
 
 
 </resources>

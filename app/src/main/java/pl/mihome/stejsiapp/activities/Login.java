@@ -46,7 +46,7 @@ public class Login extends AppCompatActivity {
     private ProgressBar progressBar;
 
 
-    private Pattern emailPattern = Pattern.compile("^\\w+@[a-zA-Z_]+?\\.[a-zA-Z]{2,3}$");
+    private Pattern emailPattern = Pattern.compile("^\\w+[\\w-\\.]*\\@\\w+((-\\w+)|(\\w*))\\.[a-z]{2,3}$");
 
     private boolean isConnected;
     private boolean isRegistered;
@@ -166,7 +166,13 @@ public class Login extends AppCompatActivity {
                                             break;
                                         case ALREADY_OK:
                                             info.setTextColor(getColor(R.color.colorText));
-                                            info.setText(R.string.info_activation_email_sent_new_device);
+                                            afterSuccessfulRegistration();
+                                            saveNewToken(currentToken, currentEmail);
+                                            break;
+                                        case NEW_DEVICE:
+                                            info.setTextColor(getColor(R.color.colorText));
+                                            showNewDeviceAlert();
+                                            info.setText(R.string.info_activation_email_sent);
                                             afterSuccessfulRegistration();
                                             saveNewToken(currentToken, currentEmail);
                                             break;
@@ -210,7 +216,7 @@ public class Login extends AppCompatActivity {
 
         registerBtn.setVisibility(View.GONE);
         String email = getIntent().getExtras().getString(StartActivity.EMAIL, "");
-        emailInput.setText(email);
+        emailInput.setText(email == "" ? currentEmail : email);
         emailInput.setEnabled(false);
         if(!email.isEmpty() && getIntent().getExtras().getBoolean(StartActivity.ERROR_400) && isRegistered)
             info.setText(R.string.info_still_watinitg_for_activation);
@@ -251,6 +257,18 @@ public class Login extends AppCompatActivity {
         alert.show();
     }
 
+    private void showNewDeviceAlert() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(Login.this);
+        builder.setTitle(R.string.registration_new_device_info_title);
+        builder.setMessage(R.string.registration_new_device_info);
+        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.dismiss();
+            }
+        });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
 
     private boolean emailValidated() {
         if(emailInput.getText().toString().isEmpty())

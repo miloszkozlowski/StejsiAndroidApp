@@ -30,4 +30,15 @@
         app:layout_constraintTop_toBottomOf="@+id/loader_progress"
         android:maxWidth="300dp"
         android:textAlignment="center"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/loaderTryAgainBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Dawaj jeszcze raz!"
+        app:layout_constraintTop_toBottomOf="@id/wait_txt"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:visibility="gone"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

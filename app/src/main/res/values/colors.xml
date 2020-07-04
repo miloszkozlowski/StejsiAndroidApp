@@ -9,4 +9,6 @@
     <color name="colorText">#373438</color>
     <color name="colorGray">#A0A0A0</color>
     <color name="cardBackground">#1ACECBD0</color>
+    <color name="commentBackground">#34CECBD0</color>
+    <color name="newCommentBackground">#7ACECBD0</color>
 </resources>
