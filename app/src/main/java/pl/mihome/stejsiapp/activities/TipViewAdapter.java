@@ -1,5 +1,6 @@
 package pl.mihome.stejsiapp.activities;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
@@ -56,7 +57,7 @@ public class TipViewAdapter extends RecyclerView.Adapter<TipViewAdapter.TipViewH
                 .addInterceptor(new Interceptor() {
                     @Override
                     public Response intercept(Chain chain) throws IOException {
-                        Request newRequest = chain.request().newBuilder()
+                        @SuppressLint("HardwareIds") Request newRequest = chain.request().newBuilder()
                                 .addHeader("token", currentToken.getTokenString())
                                 .addHeader("deviceId", Settings.Secure.getString(app.getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID))
                                 .build();
@@ -101,7 +102,8 @@ public class TipViewAdapter extends RecyclerView.Adapter<TipViewAdapter.TipViewH
             holder.tipCommentsInfo.setText(R.string.tip_no_comments_short);
         }
         else {
-            holder.tipCommentsInfo.setText(holder.itemView.getResources().getString(R.string.tip_comments_info, "(" + tip.getComments().size() + ")"));
+            Integer amount = tip.getComments().size();
+            holder.tipCommentsInfo.setText(holder.itemView.getResources().getString(R.string.tip_comments_info, amount.toString()));
         }
 
         DateTimeFormatter df = DateTimeFormatter.ofPattern("d MMMM yyyy HH:mm");

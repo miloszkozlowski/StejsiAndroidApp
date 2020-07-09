@@ -3,13 +3,11 @@ package pl.mihome.stejsiapp.activities;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Bundle;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 
 import com.google.android.material.badge.BadgeDrawable;
-import com.google.android.material.bottomnavigation.BottomNavigationItemView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +55,7 @@ public class BottomAppBar  {
                     case R.id.homeMenuBtn:
                         if(!(activity instanceof MainPageActivity)) {
                             intent = new Intent(activity, MainPageActivity.class);
-                            intent.putExtras(app.getMainBundle());
+                            //intent.putExtras(app.getMainBundle());
                             activity.startActivity(intent);
                             return true;
                         }
@@ -65,7 +63,7 @@ public class BottomAppBar  {
                     case R.id.trainingMenuBtn:
                         if(!(activity instanceof TrainingsActivity)) {
                             intent = new Intent(activity, TrainingsActivity.class);
-                            intent.putExtras(app.getMainBundle());
+                            //intent.putExtras(app.getMainBundle());
                             activity.startActivity(intent);
                             return true;
                         }
@@ -73,7 +71,7 @@ public class BottomAppBar  {
                     case R.id.tipsMenuBtn:
                         if(!(activity instanceof TipsActivity)) {
                             intent = new Intent(activity, TipsActivity.class);
-                            intent.putExtras(app.getMainBundle());
+                            //intent.putExtras(app.getMainBundle());
                             activity.startActivity(intent);
                             return true;
                         }

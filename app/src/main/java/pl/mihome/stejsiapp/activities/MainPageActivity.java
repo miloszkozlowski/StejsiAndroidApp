@@ -1,5 +1,7 @@
 package pl.mihome.stejsiapp.activities;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,6 +12,7 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -41,6 +44,7 @@ import model.Tip;
 import model.Token;
 import model.TrainingStatus;
 import model.User;
+import model.UserStats;
 import model.recyclerViews.MainViewElement;
 import model.recyclerViews.TrainingForPresenceConfirmation;
 import model.recyclerViews.TrainingForScheduleConfirmation;
@@ -54,7 +58,6 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
     private Token currentToken;
     private User currentUser;
     private String currentTime;
-    private String currentRank;
     private List<Tip> currentTipsList;
 
 
@@ -110,7 +113,6 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
 
         mainBundle = app.getMainBundle();
         currentUser = (User) mainBundle.getSerializable(LoaderActivity.USER);
-        currentRank = mainBundle.getString(LoaderActivity.USER_RANK);
         currentToken = (Token) mainBundle.getSerializable(StartActivity.TOKEN);
         currentTime = mainBundle.getString(LoaderActivity.CURRENT_TIME_HEADER);
         bundleOfTips = mainBundle.getBundle(LoaderActivity.TIPS_BUNDLE);
@@ -121,7 +123,7 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
         mainViewAdapter = new MainViewAdapter(getApplicationContext(), mainViewItems, app, findViewById(R.id.mainPageList), bottomAppBar);
         mainRecyclerView.setAdapter(mainViewAdapter);
         bottomAppBar.setBadges();
-        toolbar.setSubtitle(currentUser.getImie() + " " + currentUser.getNazwisko());
+        toolbar.setSubtitle(currentUser.getName() + " " + currentUser.getSurname());
     }
 
 
@@ -141,9 +143,9 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
             public boolean onMenuItemClick(MenuItem item) {
                 Intent intent;
                 switch (item.getItemId()) {
-                    case R.id.notifyMenuBtn:
-                        sendNotification();
-                        return true;
+//                    case R.id.notifyMenuBtn:
+//                        sendNotification();
+//                        return true;
                     case R.id.profileMenuBtn:
                         intent = new Intent(MainPageActivity.this, UserActivity.class);
                         startActivity(intent);
@@ -165,6 +167,19 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
     }
 
     private void sendNotification() {
+        Intent intent = new Intent(this, UserActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+        Notification.Builder builder = new Notification.Builder(this);
+        builder.setSmallIcon(R.drawable.ic_fitness_white_48dp)
+                .setContentTitle("Awans!")
+                .setContentText("Zostałeś Żółtodziobem - brawo!")
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
+        notificationManagerCompat.notify(1, builder.build());
 
     }
 
@@ -213,9 +228,8 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
                         ObjectMapper objectMapper = new ObjectMapper();
                         try {
                             currentUser = objectMapper.readValue(response.getString("user"), User.class);
-                            currentTipsList = objectMapper.readValue(response.getString("tips"), new TypeReference<List<Tip>>() {
-                            });
-                            currentRank = response.getString("rank");
+                            currentUser.setStats(objectMapper.readValue(response.getString("stats"), UserStats.class));
+                            currentTipsList = objectMapper.readValue(response.getString("tips"), new TypeReference<List<Tip>>() {});
                         } catch (JSONException | JsonProcessingException ex) {
                             ex.printStackTrace();
                             Snackbar snackbar = Snackbar.make(findViewById(R.id.mainPageList), R.string.error_no_server_connection, BaseTransientBottomBar.LENGTH_LONG);
@@ -231,7 +245,7 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
                         loadItemsForView();
                         bundleOfTips.clear();
                         bundleOfTips.putSerializable(TIPS_LIST, (Serializable) currentTipsList);
-                        app.setMainBundle(MainBundleBuilder.getCurrentBundle(currentUser, currentRank, currentToken, currentTime, bundleOfTips));
+                        app.setMainBundle(MainBundleBuilder.getCurrentBundle(currentUser, currentToken, currentTime, bundleOfTips));
                         mainRecyclerView.setAdapter(new MainViewAdapter(getApplicationContext(), mainViewItems, app, findViewById(R.id.mainPageList), bottomAppBar));
                         bottomAppBar.setBadges();
                         swipeRefreshLayout.setRefreshing(false);

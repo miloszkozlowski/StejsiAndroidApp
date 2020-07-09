@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "1037324157832",
+    "firebase_url": "https://stejsi-app.firebaseio.com",
+    "project_id": "stejsi-app",
+    "storage_bucket": "stejsi-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1037324157832:android:1f985a3c3ec2d10870f03d",
+        "android_client_info": {
+          "package_name": "pl.mihome.stejsiapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1037324157832-sh95mrbhe0i6bue36mpdvqd95h6htqga.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqQ6xuMW2WY1MYKcTpOZqTL_dVcMcqXgw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1037324157832-sh95mrbhe0i6bue36mpdvqd95h6htqga.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

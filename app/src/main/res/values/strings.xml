@@ -40,10 +40,10 @@
     <string name="add_to_callendar">Dodaj do kalendarza</string>
     <string name="confirming_schedule">Będę!</string>
     <string name="info_you_have_new_schedule">Trening został zaplanowany na %1$s. Gdzie? Tutaj: %2$s (%3$s)</string>
-    <string name="info_you_have_new_schedule_no_location">Trening został zaplanowany na %1$s. Tylko jeszcze nie wiadomo gdzie...</string>
+    <string name="info_you_have_new_schedule_no_location">Trening został zaplanowany na %1$s. Tylko jeszcze nie wiadomo gdzie…</string>
     <string name="info_schedule_confirmed">Potwierdziłeś termin treningu</string>
     <string name="menu_refresh">Odśwież zawartość</string>
-    <string name="tip_comments_info">Komenatrze %1$s</string>
+    <string name="tip_comments_info">Komenatrze (%1$s)</string>
     <string name="tip_no_comments">Bez komentarzy - dodaj swój</string>
     <string name="tip_no_comments_short">Bez komentarzy</string>
     <string name="desc_add_new_comment_button">Przycisk dodaj nowy komentarz</string>
@@ -80,4 +80,5 @@
     <string name="logout_info">Wylogowanie</string>
     <string name="logout_confirm">Wyloguj</string>
     <string name="logout_logged_out_info">Zostałeś wylogowany. Jeżeli chcesz korzystać z aplikacji na tym urządzeniu, zarejestruj się ponownie.</string>
+    <string name="go_back">Wróć</string>
 </resources>

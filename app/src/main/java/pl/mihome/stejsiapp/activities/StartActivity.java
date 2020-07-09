@@ -22,7 +22,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import model.Token;
-import pl.mihome.stejsiapp.R;
 
 public class StartActivity extends AppCompatActivity {
 

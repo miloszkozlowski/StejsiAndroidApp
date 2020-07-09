@@ -8,6 +8,7 @@ import android.provider.Settings;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -18,19 +19,17 @@ import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.common.Priority;
 import com.androidnetworking.error.ANError;
 import com.androidnetworking.interfaces.OkHttpResponseListener;
-import com.androidnetworking.interfaces.StringRequestListener;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
-import org.threeten.bp.LocalDateTime;
+import java.text.DecimalFormat;
 
 import app.StejsiApplication;
 import model.Token;
 import model.User;
-import model.UserRank;
 import okhttp3.Response;
 import pl.mihome.stejsiapp.R;
 
@@ -40,6 +39,7 @@ public class UserActivity extends AppCompatActivity {
     private User currentUser;
     private String currentRank;
     private Token currentToken;
+    private String currentTime;
     private Bundle mainBundle;
 
     private ImageButton closeBtn;
@@ -55,6 +55,7 @@ public class UserActivity extends AppCompatActivity {
     private MaterialButton logoutButton;
     private ProgressBar logoutProgress;
     private NestedScrollView parentLayout;
+    private RatingBar rankRatingBar;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -76,6 +77,7 @@ public class UserActivity extends AppCompatActivity {
         userStatComments = findViewById(R.id.userStatComments);
         userStatLackOfActions = findViewById(R.id.userStatLackOfActions);
         userSettingTipsNotifications = findViewById(R.id.userSettingTipsNotifications);
+        rankRatingBar = findViewById(R.id.userRankStars);
 
         closeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -92,12 +94,20 @@ public class UserActivity extends AppCompatActivity {
         mainBundle = app.getMainBundle();
         currentUser = (User) mainBundle.getSerializable(LoaderActivity.USER);
         currentToken = (Token) mainBundle.getSerializable(StartActivity.TOKEN);
-        currentRank = mainBundle.getString(LoaderActivity.USER_RANK);
+        currentTime = mainBundle.getString(LoaderActivity.CURRENT_TIME_HEADER);
 
-        userNameAndSurname.setText(currentUser.getImie() + " " + currentUser.getNazwisko());
+        userNameAndSurname.setText(currentUser.getName() + " " + currentUser.getSurname());
         userEmail.setText(currentUser.getEmail());
         userPhone.setText(" " + currentUser.getPhoneNumber());
-        userRankName.setText(currentRank);
+        userRankName.setText(currentUser.getStats().getRank().getDescription());
+        float rankMultiplier = (5f/11f);
+        rankRatingBar.setRating(currentUser.getStats().getProgressPoints()*rankMultiplier);
+        userStatTrDone.setText(" " + currentUser.getStats().getTotalTrainingsDone());
+        DecimalFormat df = new DecimalFormat("0.00");
+        userStatWklAvg.setText(df.format(currentUser.getStats().getLastFourWeeksAvgTrainingsDone()));
+        userStatComments.setText(" " + currentUser.getTipComments().size());
+        userStatLackOfActions.setText(" " + currentUser.getStats().getUnconfirmedTrainings());
+        userSettingTipsNotifications.setChecked(currentUser.isSettingTipNotifications());
 
 
 
@@ -108,6 +118,23 @@ public class UserActivity extends AppCompatActivity {
                 logout();
             }
         });
+    }
+
+    private int getRankStars() {
+        switch(currentRank) {
+            case("Leser"):
+                return 1;
+            case("Żółtodziób"):
+                return 2;
+            case("Fit Malina"):
+                return 3;
+            case("Osiłek"):
+                return 4;
+            case("Kulturysta"):
+                return 5;
+            default:
+                return 0;
+        }
     }
 
     private void logout() {

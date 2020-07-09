@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="pl.mihome.stejsiapp">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name="app.StejsiApplication"
@@ -10,8 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.Launcher"
         android:usesCleartextTraffic="true"
-        android:largeHeap="true"
-        >
+        android:largeHeap="true">
         <activity android:name=".activities.StartActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,7 +32,20 @@
         <activity android:name=".activities.UserActivity" />
         <activity android:name=".activities.ShowTipActivity"
             android:theme="@android:style/Theme.Translucent"/>
+        <service
+            android:name="services.NotificationsService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+            <meta-data
+                android:name="com.google.firebase.messaging.default_notification_icon"
+                android:resource="@drawable/ic_fitness_center_white_24dp" />
+            <meta-data
+                android:name="com.google.firebase.messaging.default_notification_color"
+                android:resource="@color/colorAccent" />
+        </service>
+
     </application>
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
 </manifest>

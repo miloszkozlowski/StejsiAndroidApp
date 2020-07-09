@@ -3,7 +3,6 @@ package pl.mihome.stejsiapp.activities;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.icu.text.SimpleDateFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -23,7 +22,6 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.common.Priority;
@@ -43,10 +41,8 @@ import org.json.JSONObject;
 import org.threeten.bp.format.DateTimeFormatter;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -159,7 +155,8 @@ public class ShowTipActivity extends AppCompatActivity {
             tipCommentsInfo.setText(R.string.tip_no_comments);
         }
         else {
-            tipCommentsInfo.setText(getResources().getString(R.string.tip_comments_info, "(" + currentTip.getComments().size() + ")"));
+            Integer amount = currentTip.getComments().size();
+            tipCommentsInfo.setText(getResources().getString(R.string.tip_comments_info, amount.toString()));
         }
 
         showComments(currentTip);

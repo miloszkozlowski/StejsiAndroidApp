@@ -1,5 +1,6 @@
 package pl.mihome.stejsiapp.activities;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -33,7 +34,7 @@ import model.Tip;
 import model.Token;
 import model.TrainingPackage;
 import model.User;
-import model.UserRank;
+import model.UserStats;
 import okhttp3.Response;
 import pl.mihome.stejsiapp.R;
 
@@ -50,7 +51,6 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
     private User currentUser;
     private Token currentToken;
     private String currentTime;
-    private String currentRank;
     private Bundle bundleOfTips;
     private List<Tip> currentTipsList;
     private Locale currentLocale;
@@ -76,7 +76,6 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
 
         mainBundle = app.getMainBundle();
         currentUser = (User)mainBundle.getSerializable(LoaderActivity.USER);
-        currentRank = mainBundle.getString(LoaderActivity.USER_RANK);
         currentToken = (Token)mainBundle.getSerializable(StartActivity.TOKEN);
         currentTime = mainBundle.getString(LoaderActivity.CURRENT_TIME_HEADER);
 
@@ -161,6 +160,7 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
         bottomAppBar.getNavigationView().setSelectedItemId(R.id.homeMenuBtn);
     }
 
+    @SuppressLint("HardwareIds")
     private void refreshRecyclerView() {
         AndroidNetworking.get(StartActivity.WEB_SERVER_URL + "/userinput/userdata")
                 .addHeaders("token", currentToken.getTokenString())
@@ -173,9 +173,9 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
                         try {
                             currentTime = okHttpResponse.header(LoaderActivity.CURRENT_TIME_HEADER);
                             currentUser = objectMapper.readValue(response.getString("user"), User.class);
-                            currentRank = response.getString(LoaderActivity.USER_RANK);
+                            currentUser.setStats(objectMapper.readValue(response.getString("stats"), UserStats.class));
                             trainingPackages = generateListForView();
-                            app.setMainBundle(MainBundleBuilder.getCurrentBundle(currentUser, currentRank, currentToken, currentTime, bundleOfTips));
+                            app.setMainBundle(MainBundleBuilder.getCurrentBundle(currentUser, currentToken, currentTime, bundleOfTips));
                             recyclerView.setAdapter(new TrainingViewAdapter(trainingPackages, app.getMainBundle(), bottomAppBar));
                             bottomAppBar.setBadges();
                             swipeRefreshLayout.setRefreshing(false);

@@ -4,11 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
-import org.threeten.bp.LocalDateTime;
-
 import java.io.Serializable;
 import java.util.List;
-import java.util.Set;
 
 @JsonIdentityInfo(
         generator = ObjectIdGenerators.PropertyGenerator.class,
@@ -18,14 +15,17 @@ import java.util.Set;
 public class User implements Serializable {
 
     private Long id;
-    private String imie;
-    private String nazwisko;
+    private String name;
+    private String surname;
     private String email;
-    private int phoneNumber;
-    private String activationKey;
-    private boolean aktywny;
-    private Set<TrainingPackage> trainingPackages;
+    private Integer phoneNumber;
+    private boolean active;
+    private boolean settingTipNotifications;
+
+    private List<TrainingPackage> trainingPackages;
     private List<TipComment> tipComments;
+
+    private UserStats stats;
 
 
     public User() {
@@ -35,59 +35,75 @@ public class User implements Serializable {
         return id;
     }
 
-    public String getImie() {
-        return imie;
+    public String getName() {
+        return name;
     }
 
-    public String getNazwisko() {
-        return nazwisko;
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getSurname() {
+        return surname;
+    }
+
+    public void setSurname(String surname) {
+        this.surname = surname;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public int getPhoneNumber() {
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public Integer getPhoneNumber() {
         return phoneNumber;
     }
 
-    public String getActivationKey() {
-        return activationKey;
+    public void setPhoneNumber(Integer phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
-    public boolean isAktywny() {
-        return aktywny;
+    public boolean isActive() {
+        return active;
     }
 
-    public Set<TrainingPackage> getTrainingPackages() {
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public List<TrainingPackage> getTrainingPackages() {
         return trainingPackages;
     }
 
-    public Integer getTotalTrainingsDone() {
-        return getTrainingPackages().stream()
-                .mapToInt(p -> p.getAmountTrainingsDone().intValue())
-                .sum();
+    public void setTrainingPackages(List<TrainingPackage> trainingPackages) {
+        this.trainingPackages = trainingPackages;
     }
-
-    public float getLastFourWeeksAvgTrainingsDone() {
-        LocalDateTime dateFourWeeksAgo = LocalDateTime.now().minusDays(28);
-        Long trainings = getTrainingPackages().stream()
-                .flatMap(p -> p.getTrainings().stream())
-                .filter(t -> t.getMarkedAsDone() != null && t.getScheduledFor().isAfter(dateFourWeeksAgo))
-                .count();
-        return trainings / 4;
-    }
-
 
     public List<TipComment> getTipComments() {
         return tipComments;
     }
 
-    public Integer getUnconfirmedTrainings(String currentTime) {
-        Long amount = getTrainingPackages().stream()
-                .flatMap(p -> p.getTrainings().stream())
-                .filter(t -> t.getScheduleConfirmed() == null || t.getStatus(currentTime) == TrainingStatus.PRESENCE_TO_CONFIRM)
-                .count();
-        return amount.intValue();
+    public void setTipComments(List<TipComment> tipComments) {
+        this.tipComments = tipComments;
+    }
+
+    public UserStats getStats() {
+        return stats;
+    }
+
+    public void setStats(UserStats stats) {
+        this.stats = stats;
+    }
+
+    public boolean isSettingTipNotifications() {
+        return settingTipNotifications;
+    }
+
+    public void setSettingTipNotifications(boolean settingTipNotifications) {
+        this.settingTipNotifications = settingTipNotifications;
     }
 }

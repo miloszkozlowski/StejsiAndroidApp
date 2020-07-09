@@ -24,7 +24,6 @@ import com.androidnetworking.common.Priority;
 import com.androidnetworking.error.ANError;
 import com.androidnetworking.interfaces.JSONObjectRequestListener;
 import com.google.gson.Gson;
-import com.jacksonandroidnetworking.JacksonParserFactory;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,6 +33,7 @@ import java.util.regex.Pattern;
 import model.RegistrationStatus;
 import model.Token;
 import pl.mihome.stejsiapp.R;
+import services.NotificationsService;
 
 public class Login extends AppCompatActivity {
 
@@ -127,10 +127,13 @@ public class Login extends AppCompatActivity {
                     currentToken = new Token();
                     currentEmail = emailInput.getText().toString();
 
+                    SharedPreferences sharedPreferences = getSharedPreferences(StartActivity.LOGIN_DATA, MODE_PRIVATE);
+
                     JSONObject jsonObject = new JSONObject();
                     try {
                         jsonObject.put("email", currentEmail);
                         jsonObject.put("token", currentToken.getTokenString());
+                        jsonObject.put("fcmToken", sharedPreferences.getString(NotificationsService.FCM_TOKEN_VALUE, null));
                         jsonObject.put("device", deviceId);
                     }
                     catch (JSONException ex) {
@@ -248,7 +251,7 @@ public class Login extends AppCompatActivity {
                 initView(false);
             }
         });
-        builder.setNegativeButton("Wróć", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(R.string.go_back, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 dialog.dismiss();
             }

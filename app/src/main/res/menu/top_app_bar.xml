@@ -2,12 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto">
 
-        <item
-            android:id="@+id/notifyMenuBtn"
-            android:icon="@drawable/baseline_message_black_48"
-            android:title=""
-            android:contentDescription=""
-            app:showAsAction="always" />
 
         <item
             android:id="@+id/refreshMenuBtn"

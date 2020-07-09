@@ -6,7 +6,6 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.icu.text.SimpleDateFormat;
 import android.os.Build;
-import android.os.Bundle;
 import android.provider.CalendarContract;
 import android.provider.Settings;
 import android.text.Editable;
@@ -359,7 +358,8 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 commentsInfo.setText(R.string.tip_no_comments);
             }
             else {
-                commentsInfo.setText(itemView.getResources().getString(R.string.tip_comments_info, "(" + tip.getComments().size() + ")"));
+                Integer commentsAmount = tip.getComments().size();
+                commentsInfo.setText(itemView.getResources().getString(R.string.tip_comments_info, commentsAmount.toString()));
             }
 
             View.OnClickListener cardExpanderListener = new View.OnClickListener() {
@@ -386,7 +386,7 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         .addInterceptor(new Interceptor() {
                             @Override
                             public Response intercept(Chain chain) throws IOException {
-                                Request newRequest = chain.request().newBuilder()
+                                @SuppressLint("HardwareIds") Request newRequest = chain.request().newBuilder()
                                         .addHeader("token", currentToken.getTokenString())
                                         .addHeader("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
                                         .build();
@@ -601,6 +601,7 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             }
 
             confirmScheduleBtn.setOnClickListener(new View.OnClickListener() {
+                @SuppressLint("HardwareIds")
                 @Override
                 public void onClick(View v) {
                     confirmScheduleBtn.setVisibility(View.GONE);
