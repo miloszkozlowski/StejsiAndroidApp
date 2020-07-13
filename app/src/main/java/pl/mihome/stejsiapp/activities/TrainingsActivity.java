@@ -4,11 +4,9 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.MenuItem;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -17,6 +15,7 @@ import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.error.ANError;
 import com.androidnetworking.interfaces.OkHttpResponseAndJSONObjectRequestListener;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.android.material.appbar.MaterialToolbar;
 
@@ -25,11 +24,9 @@ import org.json.JSONObject;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 import app.StejsiApplication;
-import model.MainBundleBuilder;
 import model.Tip;
 import model.Token;
 import model.TrainingPackage;
@@ -43,20 +40,14 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
     private SwipeRefreshLayout swipeRefreshLayout;
     private BottomAppBar bottomAppBar;
     private RecyclerView recyclerView;
-    private RecyclerView.Adapter recyclerAdapter;
-    private RecyclerView.LayoutManager recyclerLayoutManager;
-    private MaterialToolbar toolbar;
     private List<TrainingPackage> trainingPackages;
 
     private User currentUser;
     private Token currentToken;
     private String currentTime;
-    private Bundle bundleOfTips;
     private List<Tip> currentTipsList;
-    private Locale currentLocale;
 
     private StejsiApplication app;
-    private Bundle mainBundle;
 
 
     @Override
@@ -64,7 +55,7 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.trainings_page_view);
-        app = (StejsiApplication)getApplication();
+        app = (StejsiApplication) getApplication();
 
         initViews();
 
@@ -74,15 +65,15 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
     protected void onResume() {
         super.onResume();
 
-        mainBundle = app.getMainBundle();
-        currentUser = (User)mainBundle.getSerializable(LoaderActivity.USER);
-        currentToken = (Token)mainBundle.getSerializable(StartActivity.TOKEN);
-        currentTime = mainBundle.getString(LoaderActivity.CURRENT_TIME_HEADER);
+        app = (StejsiApplication)getApplication();
+
+        currentUser = app.loadStoredDataUser();
+        currentToken = app.loadStoredDataToken();
+        currentTime = app.loadStoredDataCurrentTime();
 
         trainingPackages = generateListForView();
-        recyclerAdapter = new TrainingViewAdapter(trainingPackages, mainBundle, bottomAppBar);
-        recyclerView.setAdapter(new TrainingViewAdapter(trainingPackages, app.getMainBundle(), bottomAppBar));
-
+        RecyclerView.Adapter recyclerAdapter = new TrainingViewAdapter(trainingPackages, app, bottomAppBar);
+        recyclerView.setAdapter(recyclerAdapter);
         bottomAppBar.setBadges();
     }
 
@@ -90,7 +81,7 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
 
     private void initViews() {
         recyclerView = findViewById(R.id.TrainingList);
-        recyclerLayoutManager = new LinearLayoutManager(this);
+        RecyclerView.LayoutManager recyclerLayoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(recyclerLayoutManager);
         recyclerView.setHasFixedSize(true);
         swipeRefreshLayout = findViewById(R.id.swipeLayout);
@@ -101,48 +92,42 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
 
 
     private void initMenus() {
-        toolbar = findViewById(R.id.topAppBar);
+        MaterialToolbar toolbar = findViewById(R.id.topAppBar);
         bottomAppBar = new BottomAppBar(TrainingsActivity.this, app);
 
-        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                Intent intent;
-                switch (item.getItemId()) {
-                    case R.id.profileMenuBtn:
-                        intent = new Intent(TrainingsActivity.this, UserActivity.class);
-                        startActivity(intent);
-                    case R.id.refreshMenuBtn:
-                        swipeRefreshLayout.setRefreshing(true);
-                        refreshRecyclerView();
-                        return true;
-                    case R.id.aboutMenuBtn:
-                        intent = new Intent(TrainingsActivity.this, AboutApp.class);
-                        startActivity(intent);
-                        return true;
+        toolbar.setOnMenuItemClickListener(item -> {
+            Intent intent;
+            switch (item.getItemId()) {
+                case R.id.profileMenuBtn:
+                    intent = new Intent(TrainingsActivity.this, UserActivity.class);
+                    startActivity(intent);
+                case R.id.refreshMenuBtn:
+                    swipeRefreshLayout.setRefreshing(true);
+                    refreshRecyclerView();
+                    return true;
+                case R.id.aboutMenuBtn:
+                    intent = new Intent(TrainingsActivity.this, AboutApp.class);
+                    startActivity(intent);
+                    return true;
 
-                    default:
-                        return false;
-                }
+                default:
+                    return false;
             }
         });
     }
 
     private List<TrainingPackage> generateListForView() {
 
-        Comparator<TrainingPackage> comparator = new Comparator<TrainingPackage>() {
-            @Override
-            public int compare(TrainingPackage o1, TrainingPackage o2) {
-                int comparingUsed = Boolean.compare(o2.isCurrentlyUsed(), o1.isCurrentlyUsed());
-                if(comparingUsed != 0) {
-                    return comparingUsed;
-                }
-                int comparingLastTraining = o2.getLastTraining().compareTo(o1.getLastTraining());
-                if(comparingLastTraining != 0) {
-                    return -comparingLastTraining;
-                }
-                return o1.getId().compareTo(o2.getId());
+        Comparator<TrainingPackage> comparator = (o1, o2) -> {
+            int comparingUsed = Boolean.compare(o2.isCurrentlyUsed(), o1.isCurrentlyUsed());
+            if(comparingUsed != 0) {
+                return comparingUsed;
             }
+            int comparingLastTraining = o2.getLastTraining().compareTo(o1.getLastTraining());
+            if(comparingLastTraining != 0) {
+                return comparingLastTraining;
+            }
+            return o1.getId().compareTo(o2.getId());
         };
         return currentUser.getTrainingPackages().stream()
                 .sorted(comparator)
@@ -174,9 +159,10 @@ public class TrainingsActivity extends AppCompatActivity implements SwipeRefresh
                             currentTime = okHttpResponse.header(LoaderActivity.CURRENT_TIME_HEADER);
                             currentUser = objectMapper.readValue(response.getString("user"), User.class);
                             currentUser.setStats(objectMapper.readValue(response.getString("stats"), UserStats.class));
+                            currentTipsList = objectMapper.readValue(response.getString("tips"), new TypeReference<List<Tip>>() {});
                             trainingPackages = generateListForView();
-                            app.setMainBundle(MainBundleBuilder.getCurrentBundle(currentUser, currentToken, currentTime, bundleOfTips));
-                            recyclerView.setAdapter(new TrainingViewAdapter(trainingPackages, app.getMainBundle(), bottomAppBar));
+                            app.saveAllStoredData(currentUser, currentToken, currentTime, currentTipsList);
+                            recyclerView.setAdapter(new TrainingViewAdapter(trainingPackages, app, bottomAppBar));
                             bottomAppBar.setBadges();
                             swipeRefreshLayout.setRefreshing(false);
                         }

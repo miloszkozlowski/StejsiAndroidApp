@@ -1,18 +1,13 @@
 package pl.mihome.stejsiapp.activities;
 
-import android.app.Notification;
-import android.app.PendingIntent;
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.MenuItem;
-import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -31,7 +26,6 @@ import com.google.android.material.snackbar.Snackbar;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -39,7 +33,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import app.StejsiApplication;
-import model.MainBundleBuilder;
 import model.Tip;
 import model.Token;
 import model.TrainingStatus;
@@ -51,8 +44,6 @@ import model.recyclerViews.TrainingForScheduleConfirmation;
 import okhttp3.Response;
 import pl.mihome.stejsiapp.R;
 
-import static pl.mihome.stejsiapp.activities.LoaderActivity.TIPS_LIST;
-
 public class MainPageActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
 
     private Token currentToken;
@@ -63,27 +54,18 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
 
     private MaterialToolbar toolbar;
     private RecyclerView mainRecyclerView;
-    private RecyclerView.LayoutManager mainViewManager;
     private SwipeRefreshLayout swipeRefreshLayout;
 
     private BottomAppBar bottomAppBar;
 
-    private Bundle bundleOfTips;
-    private Bundle mainBundle;
     private List<MainViewElement> mainViewItems;
-    private MainViewAdapter mainViewAdapter;
 
     private StejsiApplication app;
 
 
     @Override
     public void onBackPressed() {
-        DialogInterface.OnClickListener exitListener = new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                finishAffinity();
-            }
-        };
+        DialogInterface.OnClickListener exitListener = (dialog, which) -> finishAffinity();
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(MainPageActivity.this);
         builder.setTitle(R.string.exit)
                 .setCancelable(true)
@@ -99,9 +81,8 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_page_view);
+        mainViewItems = new ArrayList<>();
         app = (StejsiApplication) getApplication();
-        mainViewItems = new ArrayList<MainViewElement>();
-
         initMainView();
 
     }
@@ -111,16 +92,15 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
     protected void onResume() {
         super.onResume();
 
-        mainBundle = app.getMainBundle();
-        currentUser = (User) mainBundle.getSerializable(LoaderActivity.USER);
-        currentToken = (Token) mainBundle.getSerializable(StartActivity.TOKEN);
-        currentTime = mainBundle.getString(LoaderActivity.CURRENT_TIME_HEADER);
-        bundleOfTips = mainBundle.getBundle(LoaderActivity.TIPS_BUNDLE);
-        currentTipsList = (List<Tip>) bundleOfTips.getSerializable(TIPS_LIST);
+        app = (StejsiApplication) getApplication();
+        currentUser = app.loadStoredDataUser();
+        currentToken = app.loadStoredDataToken();
+        currentTime = app.loadStoredDataCurrentTime();
+        currentTipsList = app.loadStoredDataTips();
 
         loadItemsForView();
 
-        mainViewAdapter = new MainViewAdapter(getApplicationContext(), mainViewItems, app, findViewById(R.id.mainPageList), bottomAppBar);
+        MainViewAdapter mainViewAdapter = new MainViewAdapter(getApplicationContext(), mainViewItems, app, findViewById(R.id.mainPageList), bottomAppBar);
         mainRecyclerView.setAdapter(mainViewAdapter);
         bottomAppBar.setBadges();
         toolbar.setSubtitle(currentUser.getName() + " " + currentUser.getSurname());
@@ -138,53 +118,30 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
 
     private void initMenus() {
         toolbar = findViewById(R.id.topAppBar);
-        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                Intent intent;
-                switch (item.getItemId()) {
-//                    case R.id.notifyMenuBtn:
-//                        sendNotification();
-//                        return true;
-                    case R.id.profileMenuBtn:
-                        intent = new Intent(MainPageActivity.this, UserActivity.class);
-                        startActivity(intent);
-                        return true;
-                    case R.id.refreshMenuBtn:
-                        swipeRefreshLayout.setRefreshing(true);
-                        refreshRecyclerViewData();
-                        return true;
-                    case R.id.aboutMenuBtn:
-                        intent = new Intent(MainPageActivity.this, AboutApp.class);
-                        startActivity(intent);
-                        return true;
-                    default:
-                        return false;
-                }
+        toolbar.setOnMenuItemClickListener(item -> {
+            Intent intent;
+            switch (item.getItemId()) {
+                case R.id.profileMenuBtn:
+                    intent = new Intent(MainPageActivity.this, UserActivity.class);
+                    startActivity(intent);
+                    return true;
+                case R.id.refreshMenuBtn:
+                    swipeRefreshLayout.setRefreshing(true);
+                    refreshRecyclerViewData();
+                    return true;
+                case R.id.aboutMenuBtn:
+                    intent = new Intent(MainPageActivity.this, AboutApp.class);
+                    startActivity(intent);
+                    return true;
+                default:
+                    return false;
             }
         });
         bottomAppBar = new BottomAppBar(MainPageActivity.this, app);
     }
 
-    private void sendNotification() {
-        Intent intent = new Intent(this, UserActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
-        Notification.Builder builder = new Notification.Builder(this);
-        builder.setSmallIcon(R.drawable.ic_fitness_white_48dp)
-                .setContentTitle("Awans!")
-                .setContentText("Zostałeś Żółtodziobem - brawo!")
-        .setContentIntent(pendingIntent)
-        .setAutoCancel(true);
-
-        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
-        notificationManagerCompat.notify(1, builder.build());
-
-    }
-
     private void initMainListView() {
-        mainViewManager = new LinearLayoutManager(this);
+        RecyclerView.LayoutManager mainViewManager = new LinearLayoutManager(this);
         mainRecyclerView.setLayoutManager(mainViewManager);
         mainRecyclerView.hasFixedSize();
     }
@@ -193,9 +150,8 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
     private void loadItemsForView() {
         mainViewItems.clear();
         if (!currentTipsList.isEmpty()) {
-            Optional<Tip> newestTip = currentTipsList.stream().sorted(Comparator.comparing(Tip::getWhenCreated).reversed()).findFirst();
-            if (newestTip.isPresent())
-                mainViewItems.add(newestTip.get());
+            Optional<Tip> newestTip = currentTipsList.stream().max(Comparator.comparing(Tip::getWhenCreated));
+            newestTip.ifPresent(tip -> mainViewItems.add(tip));
         }
         mainViewItems.addAll(currentUser.getTrainingPackages().stream()
                 .flatMap(p -> p.getTrainings().stream())
@@ -217,6 +173,7 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
     }
 
 
+    @SuppressLint("HardwareIds")
     public void refreshRecyclerViewData() {
         AndroidNetworking.get(StartActivity.WEB_SERVER_URL + "/userinput/userdata")
                 .addHeaders("token", currentToken.getTokenString())
@@ -233,19 +190,12 @@ public class MainPageActivity extends AppCompatActivity implements SwipeRefreshL
                         } catch (JSONException | JsonProcessingException ex) {
                             ex.printStackTrace();
                             Snackbar snackbar = Snackbar.make(findViewById(R.id.mainPageList), R.string.error_no_server_connection, BaseTransientBottomBar.LENGTH_LONG);
-                            snackbar.setAction(R.string.ok, new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    snackbar.dismiss();
-                                }
-                            });
+                            snackbar.setAction(R.string.ok, v -> snackbar.dismiss());
                             snackbar.show();
                         }
                         currentTime = okHttpResponse.header(LoaderActivity.CURRENT_TIME_HEADER);
                         loadItemsForView();
-                        bundleOfTips.clear();
-                        bundleOfTips.putSerializable(TIPS_LIST, (Serializable) currentTipsList);
-                        app.setMainBundle(MainBundleBuilder.getCurrentBundle(currentUser, currentToken, currentTime, bundleOfTips));
+                        app.saveAllStoredData(currentUser, currentToken, currentTime, currentTipsList);
                         mainRecyclerView.setAdapter(new MainViewAdapter(getApplicationContext(), mainViewItems, app, findViewById(R.id.mainPageList), bottomAppBar));
                         bottomAppBar.setBadges();
                         swipeRefreshLayout.setRefreshing(false);

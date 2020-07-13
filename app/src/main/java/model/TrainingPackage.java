@@ -4,13 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.threetenbp.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.threetenbp.ser.LocalDateTimeSerializer;
 
 import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.temporal.ChronoUnit;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Set;
 
 @JsonIdentityInfo(
@@ -22,11 +25,13 @@ public class TrainingPackage  implements Serializable {
 
     private Long id;
     private boolean paid;
+    private boolean closed;
     private User owner;
     private PackageType packageType;
     private Set<Training> trainings;
 
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime whenCreated;
 
     public TrainingPackage() {
@@ -40,9 +45,13 @@ public class TrainingPackage  implements Serializable {
         return paid;
     }
 
-    public User getOwner() {
-        return owner;
+    public boolean isClosed() {
+        return closed;
     }
+
+//    public User getOwner() {
+//        return owner;
+//    }
 
     public PackageType getPackageType() {
         return packageType;
@@ -52,15 +61,12 @@ public class TrainingPackage  implements Serializable {
         return trainings;
     }
 
-    public LocalDateTime getWhenCreated() {
+    private LocalDateTime getWhenCreated() {
         return whenCreated;
     }
 
-
     public Boolean isOpened() {
-        return (0 < getTrainings().stream()
-                .filter(t -> t.getMarkedAsDone() == null)
-                .count());
+        return (getTrainings().stream().anyMatch(t -> t.getMarkedAsDone() == null));
     }
 
 
@@ -79,25 +85,30 @@ public class TrainingPackage  implements Serializable {
 
 
     public Boolean isCurrentlyUsed() {
-       Long amountUnplanned = getTrainings().stream()
+        if(closed) {
+            return false;
+        }
+       long amountUnplanned = getTrainings().stream()
                 .filter(t -> t.getScheduledFor() == null)
                 .count();
 
-       if(amountUnplanned == 0) {
-           Long amountWithoutPresence = getTrainings().stream()
+        if(amountUnplanned > 0) {
+            return true;
+        }
+        else {
+           long amountWithoutPresence = getTrainings().stream()
                    .filter(t -> t.getPresenceConfirmedByUser() == null)
                    .count();
 
            return 0 < amountWithoutPresence;
        }
 
-       return true;
     }
 
     public LocalDateTime getLastTraining() {
         return getTrainings().stream()
-                .map(t -> t.getScheduledFor())
-                .filter(time -> time != null)
+                .map(Training::getScheduledFor)
+                .filter(Objects::nonNull)
                 .max(LocalDateTime::compareTo).orElse(LocalDateTime.MIN);
     }
 
@@ -122,19 +133,19 @@ public class TrainingPackage  implements Serializable {
 
     public TrainingPackageStatus getStatus(String currentTime) {
 
-        Long trainingsPlanned = getPackageType().getAmountOfTrainings() - getAmountToPlan();
+        long trainingsPlanned = getPackageType().getAmountOfTrainings() - getAmountToPlan();
 
-        Long trainingsPresenceConfirmed = getTrainings().stream()
+        long trainingsPresenceConfirmed = getTrainings().stream()
                 .filter(t -> t.getPresenceConfirmedByUser() != null)
                 .count();
 
-        Long trainingsScheduleConfirmed = getTrainings().stream()
+        long trainingsScheduleConfirmed = getTrainings().stream()
                 .filter(t -> t.getScheduledFor() != null)
                 .filter(t -> t.getScheduledFor().isAfter(countNow(currentTime)))
                 .filter(t -> t.getScheduleConfirmed() != null)
                 .count();
 
-        Long pastTrainingsAmount = getTrainings().stream()
+        long pastTrainingsAmount = getTrainings().stream()
                 .filter(t -> t.getScheduledFor() != null)
                 .filter(t -> t.getScheduledFor().isBefore(countNow(currentTime)))
                 .count();

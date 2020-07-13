@@ -1,5 +1,6 @@
 package pl.mihome.stejsiapp.activities;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -29,15 +30,23 @@ public class StartActivity extends AppCompatActivity {
     public static final String EMAIL = "EMAIL";
     public static final String CONNECTION_STATUS = "CONNECTION_STATUS";
     public static final String REGISTRATION_STATUS = "REGISTRATION_STATUS";
-    public static final String WEB_SERVER_URL = "http://192.168.0.96:8080";
+    public static final String WEB_SERVER_URL = "http://mihome.pl:8080";
+    public static final String URL_CANCEL_TRAINING = "/userinput/cancel/";
+    public static final String URL_SCHEDULE_CONFIRMATION = "/userinput/scheduleconfirmation/";
+    public static final String URL_PRESENCE_CONFIRMATION = "/userinput/present/";
+    public static final String URL_REGISTRATION = "/userinput/register";
+    public static final String URL_USERDATA_GET = "/userinput/userdata";
+    public static final String URL_REGISTER_FCM_TOKEN = "/userinput/newfcmtoken";
     public static final String LOGIN_DATA = "LOGIN_DATA";
     public static final String ERROR_400 = "ERROR400";
+    public static final String HEADER_NAME_TOKEN = "token";
+    public static final String HEADER_NAME_DEVICE_ID = "deviceId";
 
-    private boolean isConnected;
 
     private Token currentToken;
     private String currentEmail;
 
+    @SuppressLint("HardwareIds")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,8 +54,14 @@ public class StartActivity extends AppCompatActivity {
 
 
         ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        NetworkInfo activeNetwork;
+        if(cm != null) {
+            activeNetwork = cm.getActiveNetworkInfo();
+        }
+        else {
+            activeNetwork = null;
+        }
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
 
         AndroidNetworking.initialize(getApplicationContext());
         AndroidNetworking.setParserFactory(new JacksonParserFactory());
@@ -101,7 +116,7 @@ public class StartActivity extends AppCompatActivity {
                             if(anError.getErrorCode() == 401) {
                                 SharedPreferences sharedPreferences = getSharedPreferences(StartActivity.LOGIN_DATA, MODE_PRIVATE);
                                 sharedPreferences.edit().clear().apply();
-                                Intent newLogin = new Intent(StartActivity.this, Login.class);
+                                //Intent newLogin = new Intent(StartActivity.this, Login.class);
                             }
                             else {
                                 intentLogin.putExtra(EMAIL, email);

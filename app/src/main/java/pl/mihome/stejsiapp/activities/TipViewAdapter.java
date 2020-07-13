@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Layout;
 import android.view.LayoutInflater;
@@ -22,24 +21,20 @@ import com.squareup.picasso.Picasso;
 
 import org.threeten.bp.format.DateTimeFormatter;
 
-import java.io.IOException;
 import java.util.List;
 
 import app.StejsiApplication;
 import model.Tip;
 import model.TipReadStatus;
 import model.Token;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.Response;
 import pl.mihome.stejsiapp.R;
 
 public class TipViewAdapter extends RecyclerView.Adapter<TipViewAdapter.TipViewHolder> {
 
-    public static final String TIP_TO_SHOW = "TIP_TO_SHOW";
+    static final String TIP_TO_SHOW = "TIP_TO_SHOW";
     private List<Tip> tips;
-    private Bundle mainBundle;
     private StejsiApplication app;
     private Activity activity;
 
@@ -51,18 +46,15 @@ public class TipViewAdapter extends RecyclerView.Adapter<TipViewAdapter.TipViewH
         this.tips = tips;
         this.app = app;
         this.activity = activity;
-        this.mainBundle = app.getMainBundle();
-        this.currentToken = (Token) mainBundle.getSerializable(StartActivity.TOKEN);
+//        this.mainBundle = app.getMainBundle();
+        this.currentToken = app.loadStoredDataToken();
         this.httpClient = new OkHttpClient.Builder()
-                .addInterceptor(new Interceptor() {
-                    @Override
-                    public Response intercept(Chain chain) throws IOException {
-                        @SuppressLint("HardwareIds") Request newRequest = chain.request().newBuilder()
-                                .addHeader("token", currentToken.getTokenString())
-                                .addHeader("deviceId", Settings.Secure.getString(app.getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID))
-                                .build();
-                        return chain.proceed(newRequest);
-                    }
+                .addInterceptor(chain -> {
+                    @SuppressLint("HardwareIds") Request newRequest = chain.request().newBuilder()
+                            .addHeader("token", currentToken.getTokenString())
+                            .addHeader("deviceId", Settings.Secure.getString(app.getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID))
+                            .build();
+                    return chain.proceed(newRequest);
                 })
                 .build();
     }
@@ -73,8 +65,7 @@ public class TipViewAdapter extends RecyclerView.Adapter<TipViewAdapter.TipViewH
     public TipViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
         View listItem = layoutInflater.inflate(R.layout.tip_view_card, parent, false);
-        TipViewHolder viewHolder = new TipViewHolder(listItem);
-        return viewHolder;
+        return new TipViewHolder(listItem);
     }
 
     @Override
@@ -102,20 +93,17 @@ public class TipViewAdapter extends RecyclerView.Adapter<TipViewAdapter.TipViewH
             holder.tipCommentsInfo.setText(R.string.tip_no_comments_short);
         }
         else {
-            Integer amount = tip.getComments().size();
-            holder.tipCommentsInfo.setText(holder.itemView.getResources().getString(R.string.tip_comments_info, amount.toString()));
+            int amount = tip.getComments().size();
+            holder.tipCommentsInfo.setText(holder.itemView.getResources().getString(R.string.tip_comments_info, Integer.toString(amount)));
         }
 
         DateTimeFormatter df = DateTimeFormatter.ofPattern("d MMMM yyyy HH:mm");
         holder.tipDatetime.setText(df.format(tip.getWhenCreated()));
 
-        holder.clickableSurface.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(activity, ShowTipActivity.class);
-                intent.putExtra(TIP_TO_SHOW, tip);
-                activity.startActivity(intent);
-            }
+        holder.clickableSurface.setOnClickListener(v -> {
+            Intent intent = new Intent(activity, ShowTipActivity.class);
+            intent.putExtra(TIP_TO_SHOW, tip);
+            activity.startActivity(intent);
         });
     }
 
@@ -125,7 +113,7 @@ public class TipViewAdapter extends RecyclerView.Adapter<TipViewAdapter.TipViewH
         return tips.size();
     }
 
-    public static class TipViewHolder extends RecyclerView.ViewHolder {
+    static class TipViewHolder extends RecyclerView.ViewHolder {
 
         private final TextView tipTitle;
         private final TextView tipBody;
@@ -135,7 +123,7 @@ public class TipViewAdapter extends RecyclerView.Adapter<TipViewAdapter.TipViewH
         private final LinearLayout clickableSurface;
         private final ImageView tipStatusDot;
 
-        public TipViewHolder(@NonNull View itemView) {
+        TipViewHolder(@NonNull View itemView) {
             super(itemView);
 
             tipTitle = itemView.findViewById(R.id.tipCardTitle);

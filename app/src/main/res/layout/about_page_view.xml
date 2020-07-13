@@ -29,9 +29,9 @@
                 app:menu="@menu/top_app_bar_about"
                 app:navigationIcon="@drawable/ic_arrow_back_white_24dp"
                 style="@style/Widget.MaterialComponents.Toolbar.Primary"
-                android:elevation="0dp"
+                android:elevation="0dp"/>
 
-                />
+
         </com.google.android.material.appbar.AppBarLayout>
 
         <LinearLayout

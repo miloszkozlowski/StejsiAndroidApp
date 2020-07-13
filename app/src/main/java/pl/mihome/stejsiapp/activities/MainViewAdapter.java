@@ -13,7 +13,6 @@ import android.text.TextWatcher;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -47,7 +46,6 @@ import org.json.JSONObject;
 import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.format.DateTimeFormatter;
 
-import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -67,7 +65,6 @@ import model.User;
 import model.recyclerViews.MainViewElement;
 import model.recyclerViews.TrainingForPresenceConfirmation;
 import model.recyclerViews.TrainingForScheduleConfirmation;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -76,23 +73,19 @@ import pl.mihome.stejsiapp.R;
 
 public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private Context currentContext;
     private Token currentToken;
     private User currentUser;
-    private View currentView;
     private BottomAppBar bottomAppBar;
 
     private StejsiApplication app;
 
     private List<MainViewElement> listOfElements;
 
-
+    @SuppressLint("HardwareIds")
     public MainViewAdapter(Context currentContext, List<MainViewElement> trainingList, StejsiApplication app, View currentView, BottomAppBar bottomAppBar) {
         this.listOfElements = trainingList;
-        this.currentUser = (User)app.getMainBundle().getSerializable(LoaderActivity.USER);
-        this.currentContext = currentContext;
-        this.currentToken = (Token)app.getMainBundle().getSerializable(StartActivity.TOKEN);
-        this.currentView = currentView;
+        this.currentUser = app.loadStoredDataUser();
+        this.currentToken = app.loadStoredDataToken();
         this.bottomAppBar = bottomAppBar;
         this.app = app;
     }
@@ -138,7 +131,7 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 ((TrainingViewHolder) holder).bind((TrainingForPresenceConfirmation)item, app, listOfElements, this, bottomAppBar);
                 break;
             case MainViewElement.TIP_VIEW_TYPE:
-                ((TipViewHolder)holder).bind((Tip)item, currentToken, currentUser);
+                ((TipViewHolder)holder).bind((Tip)item, currentToken, currentUser, app);
                 break;
             case MainViewElement.TRAINING_SCHEDULE_CONFIRM_TYPE:
                 ((TrainingScheduleViewHolder)holder).bind((TrainingForScheduleConfirmation)item, app, listOfElements, this, bottomAppBar);
@@ -148,7 +141,7 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
-
+    @SuppressLint("HardwareIds")
     static class TrainingViewHolder extends RecyclerView.ViewHolder {
 
         private TextView header;
@@ -156,69 +149,57 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         private MaterialButton presentBtn;
         private ProgressBar progressBar;
 
-        public TrainingViewHolder(@NonNull View itemView) {
+        TrainingViewHolder(@NonNull View itemView) {
             super(itemView);
             header = itemView.findViewById(R.id.mainViewCardHeader);
             presentBtn = itemView.findViewById(R.id.mainViewPresentButton);
             progressBar = itemView.findViewById(R.id.mainViewButtonProgressBar);
         }
 
-        public void bind(TrainingForPresenceConfirmation training, StejsiApplication app, List<MainViewElement> listOfElements, MainViewAdapter adapter, BottomAppBar bottomAppBar) {
+        void bind(TrainingForPresenceConfirmation training, StejsiApplication app, List<MainViewElement> listOfElements, MainViewAdapter adapter, BottomAppBar bottomAppBar) {
 
-            Token currentToken = (Token)app.getMainBundle().getSerializable(StartActivity.TOKEN);
+            Token currentToken = app.loadStoredDataToken();
             DateTimeFormatter dtfOut = DateTimeFormatter.ofPattern("d' 'MMMM' 'YYYY', 'HH:mm");
 
-            header.setText(itemView.getContext().getString(R.string.training) + " " + dtfOut.format(training.getScheduledFor()));
-            presentBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    presentBtn.setVisibility(View.GONE);
-                    progressBar.setVisibility(View.VISIBLE);
+            header.setText(itemView.getContext().getResources().getString(R.string.training, dtfOut.format(training.getScheduledFor())));
+            presentBtn.setOnClickListener(v -> {
+                presentBtn.setVisibility(View.GONE);
+                progressBar.setVisibility(View.VISIBLE);
 
-                    AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + "/userinput/present/" + training.getId())
-                            .setPriority(Priority.HIGH)
-                            .addHeaders("token", currentToken.getTokenString())
-                            .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
-                            .build()
-                            .getAsOkHttpResponse(new OkHttpResponseListener() {
-                                @Override
-                                public void onResponse(Response response) {
-                                    progressBar.setVisibility(View.GONE);
-                                    presentBtn.setVisibility(View.VISIBLE);
+                AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + StartActivity.URL_PRESENCE_CONFIRMATION + training.getId())
+                        .setPriority(Priority.HIGH)
+                        .addHeaders("token", currentToken.getTokenString())
+                        .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
+                        .build()
+                        .getAsOkHttpResponse(new OkHttpResponseListener() {
+                            @Override
+                            public void onResponse(Response response) {
+                                progressBar.setVisibility(View.GONE);
+                                presentBtn.setVisibility(View.VISIBLE);
 
-                                    if(response.code() == 204) {
-                                        training.getTrainingSource().setPresenceConfirmedByUser(LocalDateTime.now());
-                                        bottomAppBar.setBadges();
-                                        Snackbar snackbar = Snackbar.make(itemView, R.string.info_presence_confirmed, BaseTransientBottomBar.LENGTH_LONG);
-                                        snackbar.setAction(R.string.ok, new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                snackbar.dismiss();
-                                            }
-                                        });
-                                        snackbar.show();
-                                        listOfElements.remove(getAdapterPosition());
-                                        adapter.notifyItemRemoved(getAdapterPosition());
-                                        adapter.notifyItemRangeChanged(getAdapterPosition(), listOfElements.size());
-                                    }
-
-                                }
-
-                                @Override
-                                public void onError(ANError anError) {
-                                    progressBar.setVisibility(View.GONE);
-                                    presentBtn.setVisibility(View.VISIBLE);
-                                    Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                                    snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            snackbar.dismiss();
-                                        }
-                                    });
+                                if(response.code() == 204) {
+                                    training.getTrainingSource().setPresenceConfirmedByUser(LocalDateTime.now());
+                                    app.replaceTrainingInStoredData(training.getTrainingSource());
+                                    bottomAppBar.setBadges();
+                                    Snackbar snackbar = Snackbar.make(itemView, R.string.info_presence_confirmed, BaseTransientBottomBar.LENGTH_LONG);
+                                    snackbar.setAction(R.string.ok, v1 -> snackbar.dismiss());
                                     snackbar.show();
+                                    listOfElements.remove(getAdapterPosition());
+                                    adapter.notifyItemRemoved(getAdapterPosition());
+                                    adapter.notifyItemRangeChanged(getAdapterPosition(), listOfElements.size());
                                 }
-                            });
-                }
+
+                            }
+
+                            @Override
+                            public void onError(ANError anError) {
+                                progressBar.setVisibility(View.GONE);
+                                presentBtn.setVisibility(View.VISIBLE);
+                                Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
+                                snackbar.setAction(R.string.will_try_again_CAP, v12 -> snackbar.dismiss());
+                                snackbar.show();
+                            }
+                        });
             });
 
         }
@@ -239,11 +220,9 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         private LinearLayout clickableLayout;
 
 
-        private List<TipComment> commentsList;
-
         private boolean expanded = false;
 
-        public TipViewHolder(@NonNull View itemView) {
+        TipViewHolder(@NonNull View itemView) {
             super(itemView);
             image = itemView.findViewById(R.id.mainViewTipCardImage);
             header = itemView.findViewById(R.id.mainViewTipCardHeader);
@@ -259,7 +238,8 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         }
 
-        public void bind(Tip tip, Token currentToken, User currentUser) {
+        @SuppressLint("HardwareIds")
+        void bind(Tip tip, Token currentToken, User currentUser, StejsiApplication app) {
 
             showComments(tip, currentToken, currentUser);
 
@@ -289,62 +269,52 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 }
             });
 
-            addCommentBtn.setOnClickListener(new View.OnClickListener() {
-                @SuppressLint("HardwareIds")
-                @Override
-                public void onClick(View v) {
-                    addCommentBtn.setVisibility(View.GONE);
-                    newCommentProgressBar.setVisibility(View.VISIBLE);
-                    newCommentBody.setEnabled(false);
+            addCommentBtn.setOnClickListener(v -> {
+                addCommentBtn.setVisibility(View.GONE);
+                newCommentProgressBar.setVisibility(View.VISIBLE);
+                newCommentBody.setEnabled(false);
 
-                    JSONObject jsonObject = new JSONObject();
-                    try {
-                        jsonObject.put("body", newCommentBody.getText().toString());
-                        jsonObject.put("tipId", tip.getId());
+                JSONObject jsonObject = new JSONObject();
+                try {
+                    jsonObject.put("body", newCommentBody.getText().toString());
+                    jsonObject.put("tipId", tip.getId());
 
-                    }
-                    catch (JSONException ex) {
-                        ex.printStackTrace();
-                    }
+                }
+                catch (JSONException ex) {
+                    ex.printStackTrace();
+                }
 
-                    AndroidNetworking.post(StartActivity.WEB_SERVER_URL + "/userinput/newcomment")
-                            .setPriority(Priority.MEDIUM)
-                            .addHeaders("token", currentToken.getTokenString())
-                            .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
-                            .addJSONObjectBody(jsonObject)
-                            .build()
-                            .getAsOkHttpResponse(new OkHttpResponseListener() {
-                                @Override
-                                public void onResponse(Response response) {
-                                    if(response.code() == 201) {
-                                        refreshComments(tip, currentToken, currentUser);
-                                        newCommentProgressBar.setVisibility(View.GONE);
-                                        addCommentBtn.setVisibility(View.VISIBLE);
-                                        newCommentBody.setEnabled(true);
-                                        newCommentBody.setText("");
-                                        addCommentBtn.setAlpha(0.2F);
-                                    }
-                                    else {
-                                        onError(new ANError());
-                                    }
-                                }
-
-                                @Override
-                                public void onError(ANError anError) {
+                AndroidNetworking.post(StartActivity.WEB_SERVER_URL + "/userinput/newcomment")
+                        .setPriority(Priority.MEDIUM)
+                        .addHeaders("token", currentToken.getTokenString())
+                        .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
+                        .addJSONObjectBody(jsonObject)
+                        .build()
+                        .getAsOkHttpResponse(new OkHttpResponseListener() {
+                            @Override
+                            public void onResponse(Response response) {
+                                if(response.code() == 201) {
+                                    refreshComments(tip, currentToken, currentUser);
                                     newCommentProgressBar.setVisibility(View.GONE);
                                     addCommentBtn.setVisibility(View.VISIBLE);
-                                    Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                                    //Snackbar snackbar = Snackbar.make(itemView, anError.getErrorCode() + anError.getErrorDetail(), BaseTransientBottomBar.LENGTH_LONG);
-                                    snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            snackbar.dismiss();
-                                        }
-                                    });
-                                    snackbar.show();
+                                    newCommentBody.setEnabled(true);
+                                    newCommentBody.setText("");
+                                    addCommentBtn.setAlpha(0.2F);
                                 }
-                            });
-                }
+                                else {
+                                    onError(new ANError());
+                                }
+                            }
+
+                            @Override
+                            public void onError(ANError anError) {
+                                newCommentProgressBar.setVisibility(View.GONE);
+                                addCommentBtn.setVisibility(View.VISIBLE);
+                                Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
+                                snackbar.setAction(R.string.will_try_again_CAP, v1 -> snackbar.dismiss());
+                                snackbar.show();
+                            }
+                        });
             });
 
             header.setText(tip.getHeading());
@@ -358,23 +328,20 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 commentsInfo.setText(R.string.tip_no_comments);
             }
             else {
-                Integer commentsAmount = tip.getComments().size();
-                commentsInfo.setText(itemView.getResources().getString(R.string.tip_comments_info, commentsAmount.toString()));
+                int commentsAmount = tip.getComments().size();
+                commentsInfo.setText(itemView.getResources().getString(R.string.tip_comments_info, Integer.toString(commentsAmount)));
             }
 
-            View.OnClickListener cardExpanderListener = new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if(!expanded) {
-                        expandableView.setVisibility(View.VISIBLE);
-                        expandBtn.setImageResource(R.drawable.ic_expand_less_black_24dp);
-                        expanded = true;
-                    }
-                    else {
-                        expandableView.setVisibility(View.GONE);
-                        expandBtn.setImageResource(R.drawable.ic_expand_more_black_24dp);
-                        expanded = false;
-                    }
+            View.OnClickListener cardExpanderListener = v -> {
+                if(!expanded) {
+                    expandableView.setVisibility(View.VISIBLE);
+                    expandBtn.setImageResource(R.drawable.ic_expand_less_black_24dp);
+                    expanded = true;
+                }
+                else {
+                    expandableView.setVisibility(View.GONE);
+                    expandBtn.setImageResource(R.drawable.ic_expand_more_black_24dp);
+                    expanded = false;
                 }
             };
 
@@ -383,15 +350,12 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             if(tip.isLocalImagePresent()) {
 
                 OkHttpClient client = new OkHttpClient.Builder()
-                        .addInterceptor(new Interceptor() {
-                            @Override
-                            public Response intercept(Chain chain) throws IOException {
-                                @SuppressLint("HardwareIds") Request newRequest = chain.request().newBuilder()
-                                        .addHeader("token", currentToken.getTokenString())
-                                        .addHeader("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
-                                        .build();
-                                return chain.proceed(newRequest);
-                            }
+                        .addInterceptor(chain -> {
+                            @SuppressLint("HardwareIds") Request newRequest = chain.request().newBuilder()
+                                    .addHeader("token", currentToken.getTokenString())
+                                    .addHeader("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
+                                    .build();
+                            return chain.proceed(newRequest);
                         })
                         .build();
                 Picasso picasso = new Picasso.Builder(itemView.getContext())
@@ -420,13 +384,17 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         .build()
                         .getAsString(new StringRequestListener() {
                             @Override
-                            public void onResponse(String response) {}
+                            public void onResponse(String response) {
+                                tip.setTipStatusByUser(TipReadStatus.READ);
+                                app.replaceTipInStoredData(tip);
+                            }
                             @Override
                             public void onError(ANError anError) {}
                         });
             }
         }
 
+        @SuppressLint("HardwareIds")
         private void refreshComments(Tip tip, Token currentToken, User currentUser) {
             AndroidNetworking.get(StartActivity.WEB_SERVER_URL + "/userinput/comments/" + tip.getId())
                     .setPriority(Priority.HIGH)
@@ -438,9 +406,9 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         public void onResponse(List<TipComment> response) {
                             tip.setComments(new HashSet<>(response));
                             showComments(tip, currentToken, currentUser);
-                            Integer commentsAmount = tip.getComments().size();
+                            int commentsAmount = tip.getComments().size();
                             TextView commentsInfo = itemView.findViewById(R.id.tipCommentesInfo);
-                            commentsInfo.setText(itemView.getResources().getString(R.string.tip_comments_info,  commentsAmount.toString()));
+                            commentsInfo.setText(itemView.getResources().getString(R.string.tip_comments_info, Integer.toString(commentsAmount)));
                         }
 
                         @Override
@@ -450,6 +418,7 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     });
         }
 
+        @SuppressLint("HardwareIds")
         private void removeComment(Long cid, Tip tip, Token currentToken, User currentUser) {
             AndroidNetworking.delete(StartActivity.WEB_SERVER_URL + "/userinput/removecomment/" + cid)
                     .setPriority(Priority.MEDIUM)
@@ -465,23 +434,18 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         @Override
                         public void onError(ANError anError) {
                             Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                            snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    snackbar.dismiss();
-                                }
-                            });
+                            snackbar.setAction(R.string.will_try_again_CAP, v -> snackbar.dismiss());
                             snackbar.show();
                         }
                     });
         }
 
         private void showComments(Tip tip, Token currentToken, User currentUser) {
-            commentsList = getCommentsList(tip.getComments());
+            List<TipComment> commentsList = getCommentsList(tip.getComments());
 
             LayoutInflater layoutInflater = (LayoutInflater) itemView.getContext().getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             LinearLayout insertPoint = itemView.findViewById(R.id.tipCardCommentListView);
-            List views = new ArrayList();
+            List<View> views = new ArrayList<>();
             insertPoint.removeAllViews();
             for(int i = 0; i < commentsList.size(); i++) {
                 View view = layoutInflater.inflate(R.layout.main_view_card_tip_comment, null);
@@ -497,32 +461,24 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 dateTime.setText(df.format(tipComment.getWhenCreated()));
 
                 if(currentUser.getId().equals(tipComment.getAuthorId())) {
-                    int finalI = i;
-                    tipCommentBodyLayout.setOnLongClickListener(new View.OnLongClickListener() {
-                        @Override
-                        public boolean onLongClick(View v) {
-                            ContextWrapper contextWrapper = new ContextThemeWrapper(view.getContext(), R.style.PopUpMenuCustom);
-                            PopupMenu popupMenu = new PopupMenu(contextWrapper, tipCommentBodyLayout, Gravity.RIGHT);
-                            popupMenu.getMenuInflater().inflate(R.menu.comment_pop_up_menu, popupMenu.getMenu());
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                popupMenu.setForceShowIcon(true);
-                            }
-                            popupMenu.show();
-                            popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                                @Override
-                                public boolean onMenuItemClick(MenuItem item) {
-                                    switch (item.getItemId()) {
-                                        case (R.id.tipCommentRemoveBtn):
-                                            removeComment(tipComment.getId(), tip, currentToken, currentUser);
-                                            return true;
-                                        default:
-                                            return false;
-                                    }
-
-                                }
-                            });
-                            return false;
+                    //int finalI = i;
+                    tipCommentBodyLayout.setOnLongClickListener(v -> {
+                        ContextWrapper contextWrapper = new ContextThemeWrapper(view.getContext(), R.style.PopUpMenuCustom);
+                        PopupMenu popupMenu = new PopupMenu(contextWrapper, tipCommentBodyLayout, Gravity.END);
+                        popupMenu.getMenuInflater().inflate(R.menu.comment_pop_up_menu, popupMenu.getMenu());
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            popupMenu.setForceShowIcon(true);
                         }
+                        popupMenu.show();
+                        popupMenu.setOnMenuItemClickListener(item -> {
+                            if (item.getItemId() == R.id.tipCommentRemoveBtn) {
+                                removeComment(tipComment.getId(), tip, currentToken, currentUser);
+                                return true;
+                            }
+                            return false;
+
+                        });
+                        return false;
                     });
                 }
 
@@ -530,7 +486,7 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             }
 
             for(int i = 0; i<views.size(); i++)
-                insertPoint.addView((View) views.get(i));
+                insertPoint.addView(views.get(i));
         }
 
         @NotNull
@@ -551,7 +507,7 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         private ImageButton closeBtn;
 
 
-        public TrainingScheduleViewHolder(@NonNull View itemView) {
+        TrainingScheduleViewHolder(@NonNull View itemView) {
             super(itemView);
             text = itemView.findViewById(R.id.mainViewScheduleCardText);
             addToCalendarBtn = itemView.findViewById(R.id.mainViewScheduleToCallendarButton);
@@ -561,8 +517,9 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         }
 
-        public void bind(TrainingForScheduleConfirmation training, StejsiApplication app, List<MainViewElement> listOfElements, MainViewAdapter adapter, BottomAppBar bottomAppBar) {
-            Token currentToken = (Token)app.getMainBundle().getSerializable(StartActivity.TOKEN);
+        @SuppressLint("HardwareIds")
+        void bind(TrainingForScheduleConfirmation training, StejsiApplication app, List<MainViewElement> listOfElements, MainViewAdapter adapter, BottomAppBar bottomAppBar) {
+            Token currentToken = app.loadStoredDataToken();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
             try {
                 Date date = sdf.parse(training.getScheduledFor().toString());
@@ -573,92 +530,73 @@ public class MainViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 else
                     text.setText(itemView.getResources().getString(R.string.info_you_have_new_schedule, dtf.format(training.getScheduledFor()), training.getLocation().getName(), training.getLocation().getPostalAddress().replace("\n", "")));
 
-                addToCalendarBtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Calendar beginOfEvent = Calendar.getInstance();
-                        beginOfEvent.setTime(date);
-                        Calendar endOfEvent = Calendar.getInstance();
-                        endOfEvent.setTime(date);
-                        endOfEvent.add(Calendar.MINUTE, training.getTrainingPackage().getPackageType().getLengthMinutes());
+                addToCalendarBtn.setOnClickListener(v -> {
+                    Calendar beginOfEvent = Calendar.getInstance();
+                    beginOfEvent.setTime(date);
+                    Calendar endOfEvent = Calendar.getInstance();
+                    endOfEvent.setTime(date);
+                    endOfEvent.add(Calendar.MINUTE, training.getTrainingPackage().getPackageType().getLengthMinutes());
 
-                        Intent addToCallendarIntent = new Intent(Intent.ACTION_INSERT)
-                                .setData(CalendarContract.Events.CONTENT_URI)
-                                .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginOfEvent.getTimeInMillis())
-                                .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endOfEvent.getTimeInMillis())
-                                .putExtra(CalendarContract.Events.TITLE, "Trening personalny ze Stejsi")
-                                .putExtra(CalendarContract.Events.DESCRIPTION, "Będziemy trenować! Zapraszam serdecznie na nasz wspólny trening.")
-                                .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
-                                .putExtra(CalendarContract.Events.HAS_ALARM, 0);
-                        if(training.getLocation() != null)
-                            addToCallendarIntent.putExtra(CalendarContract.Events.EVENT_LOCATION, training.getLocation().getName() + ", " + training.getLocation().getPostalAddress());
-                        itemView.getContext().startActivity(addToCallendarIntent);
-                    }
+                    Intent addToCallendarIntent = new Intent(Intent.ACTION_INSERT)
+                            .setData(CalendarContract.Events.CONTENT_URI)
+                            .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginOfEvent.getTimeInMillis())
+                            .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endOfEvent.getTimeInMillis())
+                            .putExtra(CalendarContract.Events.TITLE, app.getString(R.string.main_personal_with_stejsi))
+                            .putExtra(CalendarContract.Events.DESCRIPTION, app.getString(R.string.main_inviting))
+                            .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
+                            .putExtra(CalendarContract.Events.HAS_ALARM, 0);
+                    if(training.getLocation() != null)
+                        addToCallendarIntent.putExtra(CalendarContract.Events.EVENT_LOCATION, training.getLocation().getName() + ", " + training.getLocation().getPostalAddress());
+                    itemView.getContext().startActivity(addToCallendarIntent);
                 });
             }
             catch(ParseException ex) {
                 ex.printStackTrace();
             }
 
-            confirmScheduleBtn.setOnClickListener(new View.OnClickListener() {
-                @SuppressLint("HardwareIds")
-                @Override
-                public void onClick(View v) {
-                    confirmScheduleBtn.setVisibility(View.GONE);
-                    progressBar.setVisibility(View.VISIBLE);
+            confirmScheduleBtn.setOnClickListener(v -> {
+                confirmScheduleBtn.setVisibility(View.GONE);
+                progressBar.setVisibility(View.VISIBLE);
 
-                    AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + "/userinput/scheduleconfirmation/" + training.getId())
-                            .setPriority(Priority.HIGH)
-                            .addHeaders("token", currentToken.getTokenString())
-                            .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
-                            .build()
-                            .getAsOkHttpResponse(new OkHttpResponseListener() {
-                                @Override
-                                public void onResponse(Response response) {
-                                    progressBar.setVisibility(View.GONE);
+                AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + StartActivity.URL_SCHEDULE_CONFIRMATION + training.getId())
+                        .setPriority(Priority.HIGH)
+                        .addHeaders("token", currentToken.getTokenString())
+                        .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
+                        .build()
+                        .getAsOkHttpResponse(new OkHttpResponseListener() {
+                            @Override
+                            public void onResponse(Response response) {
+                                progressBar.setVisibility(View.GONE);
 
-                                    if(response.code() == 204) {
-                                        training.getTrainingSource().setScheduleConfirmed(LocalDateTime.now());
-                                        bottomAppBar.setBadges();
-                                        Snackbar snackbar = Snackbar.make(itemView, R.string.info_schedule_confirmed, BaseTransientBottomBar.LENGTH_LONG);
-                                        snackbar.setAction(R.string.ok, new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                snackbar.dismiss();
-                                            }
-                                        });
-                                        snackbar.show();
-                                        closeBtn.setVisibility(View.VISIBLE);
-                                        addToCalendarBtn.setVisibility(View.VISIBLE);
-                                    }
-                                    else
-                                        confirmScheduleBtn.setVisibility(View.VISIBLE);
-                                }
-
-                                @Override
-                                public void onError(ANError anError) {
-                                    progressBar.setVisibility(View.GONE);
-                                    confirmScheduleBtn.setVisibility(View.VISIBLE);
-                                    Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                                    snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            snackbar.dismiss();
-                                        }
-                                    });
+                                if(response.code() == 204) {
+                                    training.getTrainingSource().setScheduleConfirmed(LocalDateTime.now());
+                                    app.replaceTrainingInStoredData(training.getTrainingSource());
+                                    bottomAppBar.setBadges();
+                                    Snackbar snackbar = Snackbar.make(itemView, R.string.info_schedule_confirmed, BaseTransientBottomBar.LENGTH_LONG);
+                                    snackbar.setAction(R.string.ok, v12 -> snackbar.dismiss());
                                     snackbar.show();
+                                    closeBtn.setVisibility(View.VISIBLE);
+                                    addToCalendarBtn.setVisibility(View.VISIBLE);
                                 }
-                            });
-                }
+                                else
+                                    confirmScheduleBtn.setVisibility(View.VISIBLE);
+                            }
+
+                            @Override
+                            public void onError(ANError anError) {
+                                progressBar.setVisibility(View.GONE);
+                                confirmScheduleBtn.setVisibility(View.VISIBLE);
+                                Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
+                                snackbar.setAction(R.string.will_try_again_CAP, v1 -> snackbar.dismiss());
+                                snackbar.show();
+                            }
+                        });
             });
 
-            closeBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    listOfElements.remove(getAdapterPosition());
-                    adapter.notifyItemRemoved(getAdapterPosition());
-                    adapter.notifyItemRangeChanged(getAdapterPosition(), listOfElements.size());
-                }
+            closeBtn.setOnClickListener(v -> {
+                listOfElements.remove(getAdapterPosition());
+                adapter.notifyItemRemoved(getAdapterPosition());
+                adapter.notifyItemRangeChanged(getAdapterPosition(), listOfElements.size());
             });
 
 

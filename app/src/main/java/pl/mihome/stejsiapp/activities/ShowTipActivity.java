@@ -11,7 +11,6 @@ import android.text.TextWatcher;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -40,23 +39,21 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.threeten.bp.format.DateTimeFormatter;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import app.StejsiApplication;
-import model.MainBundleBuilder;
 import model.Tip;
 import model.TipComment;
 import model.TipReadStatus;
 import model.Token;
 import model.User;
 import model.viewElements.FadingImageView;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -81,7 +78,6 @@ public class ShowTipActivity extends AppCompatActivity {
     private Token currentToken;
     private Tip currentTip;
     private User currentUser;
-    private Bundle mainBundle;
 
     private List<TipComment> commentsList;
 
@@ -95,13 +91,14 @@ public class ShowTipActivity extends AppCompatActivity {
         initViews();
     }
 
+    @SuppressLint("HardwareIds")
     @Override
     protected void onResume() {
         super.onResume();
-        mainBundle = app.getMainBundle();
-        currentToken = (Token) mainBundle.getSerializable(StartActivity.TOKEN);
+//        mainBundle = app.getMainBundle();
+        currentToken = app.loadStoredDataToken();
         currentTip = (Tip) getIntent().getSerializableExtra(TipViewAdapter.TIP_TO_SHOW);
-        currentUser = (User) mainBundle.getSerializable(LoaderActivity.USER);
+        currentUser = app.loadStoredDataUser();
 
         showTipPicture();
         tipTitle.setText(currentTip.getHeading());
@@ -144,7 +141,7 @@ public class ShowTipActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(String response) {
                             currentTip.setTipStatusByUser(TipReadStatus.READ);
-                            app.setMainBundle(MainBundleBuilder.updateCurrentBundle(currentTip));
+                            app.replaceTipInStoredData(currentTip);
                         }
                         @Override
                         public void onError(ANError anError) {}
@@ -155,68 +152,59 @@ public class ShowTipActivity extends AppCompatActivity {
             tipCommentsInfo.setText(R.string.tip_no_comments);
         }
         else {
-            Integer amount = currentTip.getComments().size();
-            tipCommentsInfo.setText(getResources().getString(R.string.tip_comments_info, amount.toString()));
+            int amount = currentTip.getComments().size();
+            tipCommentsInfo.setText(getResources().getString(R.string.tip_comments_info, Integer.toString(amount)));
         }
 
         showComments(currentTip);
 
-        tipNewCommentBtn.setOnClickListener(new View.OnClickListener() {
-            @SuppressLint("HardwareIds")
-            @Override
-            public void onClick(View v) {
-                tipNewCommentBtn.setVisibility(View.GONE);
-                tipProgressBar.setVisibility(View.VISIBLE);
-                tipNewCommentBody.setEnabled(false);
+        tipNewCommentBtn.setOnClickListener(v -> {
+            tipNewCommentBtn.setVisibility(View.GONE);
+            tipProgressBar.setVisibility(View.VISIBLE);
+            tipNewCommentBody.setEnabled(false);
 
-                JSONObject jsonObject = new JSONObject();
-                try {
-                    jsonObject.put("body", tipNewCommentBody.getText().toString());
-                    jsonObject.put("tipId", currentTip.getId());
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("body", tipNewCommentBody.getText().toString());
+                jsonObject.put("tipId", currentTip.getId());
 
-                }
-                catch (JSONException ex) {
-                    ex.printStackTrace();
-                }
+            }
+            catch (JSONException ex) {
+                ex.printStackTrace();
+            }
 
-                AndroidNetworking.post(StartActivity.WEB_SERVER_URL + "/userinput/newcomment")
-                        .setPriority(Priority.MEDIUM)
-                        .addHeaders("token", currentToken.getTokenString())
-                        .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
-                        .addJSONObjectBody(jsonObject)
-                        .build()
-                        .getAsOkHttpResponse(new OkHttpResponseListener() {
-                            @Override
-                            public void onResponse(Response response) {
-                                if(response.code() == 201) {
-                                    refreshComments();
-                                    tipProgressBar.setVisibility(View.GONE);
-                                    tipNewCommentBtn.setVisibility(View.VISIBLE);
-                                    tipNewCommentBody.setEnabled(true);
-                                    tipNewCommentBody.setText("");
-                                    tipNewCommentBtn.setAlpha(0.2F);
-                                }
-                                else {
-                                    onError(new ANError());
-                                }
-                            }
-
-                            @Override
-                            public void onError(ANError anError) {
+            AndroidNetworking.post(StartActivity.WEB_SERVER_URL + "/userinput/newcomment")
+                    .setPriority(Priority.MEDIUM)
+                    .addHeaders("token", currentToken.getTokenString())
+                    .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
+                    .addJSONObjectBody(jsonObject)
+                    .build()
+                    .getAsOkHttpResponse(new OkHttpResponseListener() {
+                        @Override
+                        public void onResponse(Response response) {
+                            if(response.code() == 201) {
+                                refreshComments();
                                 tipProgressBar.setVisibility(View.GONE);
                                 tipNewCommentBtn.setVisibility(View.VISIBLE);
-                                Snackbar snackbar = Snackbar.make(getCurrentFocus(), R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                                //Snackbar snackbar = Snackbar.make(itemView, anError.getErrorCode() + anError.getErrorDetail(), BaseTransientBottomBar.LENGTH_LONG);
-                                snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        snackbar.dismiss();
-                                    }
-                                });
-                                snackbar.show();
+                                tipNewCommentBody.setEnabled(true);
+                                tipNewCommentBody.setText("");
+                                tipNewCommentBtn.setAlpha(0.2F);
                             }
-                        });
-            }
+                            else {
+                                onError(new ANError());
+                            }
+                        }
+
+                        @Override
+                        public void onError(ANError anError) {
+                            tipProgressBar.setVisibility(View.GONE);
+                            tipNewCommentBtn.setVisibility(View.VISIBLE);
+                            Snackbar snackbar = Snackbar.make(Objects.requireNonNull(getCurrentFocus()), R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
+                            //Snackbar snackbar = Snackbar.make(itemView, anError.getErrorCode() + anError.getErrorDetail(), BaseTransientBottomBar.LENGTH_LONG);
+                            snackbar.setAction(R.string.will_try_again_CAP, v1 -> snackbar.dismiss());
+                            snackbar.show();
+                        }
+                    });
         });
 
     }
@@ -224,15 +212,12 @@ public class ShowTipActivity extends AppCompatActivity {
     private void showTipPicture() {
         if(currentTip.isLocalImagePresent()) {
             OkHttpClient client = new OkHttpClient.Builder()
-                    .addInterceptor(new Interceptor() {
-                        @Override
-                        public Response intercept(Chain chain) throws IOException {
-                            Request newRequest = chain.request().newBuilder()
-                                    .addHeader("token", currentToken.getTokenString())
-                                    .addHeader("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
-                                    .build();
-                            return chain.proceed(newRequest);
-                        }
+                    .addInterceptor(chain -> {
+                        @SuppressLint("HardwareIds") Request newRequest = chain.request().newBuilder()
+                                .addHeader("token", currentToken.getTokenString())
+                                .addHeader("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
+                                .build();
+                        return chain.proceed(newRequest);
                     })
                     .build();
             Picasso picasso = new Picasso.Builder(getApplicationContext())
@@ -247,12 +232,7 @@ public class ShowTipActivity extends AppCompatActivity {
                 else
                     tipImage.setVisibility(View.GONE);
         }
-        tipCloseBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        tipCloseBtn.setOnClickListener(v -> finish());
     }
 
 
@@ -282,10 +262,11 @@ public class ShowTipActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(List<TipComment> response) {
                         currentTip.setComments(new HashSet<>(response));
-                        app.setMainBundle(MainBundleBuilder.updateCurrentBundle(currentTip));
+//                        app.setMainBundle(MainBundleBuilder.updateCurrentBundle(currentTip));
+                        app.replaceTipInStoredData(currentTip);
                         showComments(currentTip);
-                        Integer commentsAmount = currentTip.getComments().size();
-                        tipCommentsInfo.setText(getResources().getString(R.string.tip_comments_info,  commentsAmount.toString()));
+                        int commentsAmount = currentTip.getComments().size();
+                        tipCommentsInfo.setText(getResources().getString(R.string.tip_comments_info, Integer.toString(commentsAmount)));
                     }
 
                     @Override
@@ -295,6 +276,7 @@ public class ShowTipActivity extends AppCompatActivity {
                 });
     }
 
+    @SuppressLint("HardwareIds")
     private void removeComment(Long cid) {
         AndroidNetworking.delete(StartActivity.WEB_SERVER_URL + "/userinput/removecomment/" + cid)
                 .setPriority(Priority.MEDIUM)
@@ -311,13 +293,8 @@ public class ShowTipActivity extends AppCompatActivity {
                     public void onError(ANError anError) {
                         tipProgressBar.setVisibility(View.GONE);
                         tipNewCommentBtn.setVisibility(View.VISIBLE);
-                        Snackbar snackbar = Snackbar.make(getCurrentFocus(), R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                        snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                snackbar.dismiss();
-                            }
-                        });
+                        Snackbar snackbar = Snackbar.make(Objects.requireNonNull(getCurrentFocus()), R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
+                        snackbar.setAction(R.string.will_try_again_CAP, v -> snackbar.dismiss());
                         snackbar.show();
                     }
                 });
@@ -328,10 +305,11 @@ public class ShowTipActivity extends AppCompatActivity {
 
         LayoutInflater layoutInflater = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         LinearLayout insertPoint = tipCommentsView;
-        List views = new ArrayList();
+        List<View> views = new ArrayList<>();
         insertPoint.removeAllViews();
         for(int i = 0; i < commentsList.size(); i++) {
-            View view = layoutInflater.inflate(R.layout.main_view_card_tip_comment, null);
+            assert layoutInflater != null;
+            @SuppressLint("InflateParams") View view = layoutInflater.inflate(R.layout.main_view_card_tip_comment, null);
             TextView body = view.findViewById(R.id.tipCommentBody);
             TextView author = view.findViewById(R.id.tipCommentAuthor);
             TextView dateTime = view.findViewById(R.id.tipCommentDateTime);
@@ -346,38 +324,30 @@ public class ShowTipActivity extends AppCompatActivity {
 
             if(currentUser.getId().equals(tipComment.getAuthorId())) {
                 int finalI = i;
-                tipCommentBodyLayout.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        ContextWrapper contextWrapper = new ContextThemeWrapper(view.getContext(), R.style.PopUpMenuCustom);
-                        PopupMenu popupMenu = new PopupMenu(contextWrapper, tipCommentBodyLayout, Gravity.RIGHT);
-                        popupMenu.getMenuInflater().inflate(R.menu.comment_pop_up_menu, popupMenu.getMenu());
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            popupMenu.setForceShowIcon(true);
-                        }
-                        popupMenu.show();
-                        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                            @Override
-                            public boolean onMenuItemClick(MenuItem item) {
-                                switch (item.getItemId()) {
-                                    case (R.id.tipCommentRemoveBtn):
-                                        removeComment(commentsList.get(finalI).getId());
-                                        return true;
-                                    default:
-                                        return false;
-                                }
-
-                            }
-                        });
-                        return false;
+                tipCommentBodyLayout.setOnLongClickListener(v -> {
+                    ContextWrapper contextWrapper = new ContextThemeWrapper(view.getContext(), R.style.PopUpMenuCustom);
+                    PopupMenu popupMenu = new PopupMenu(contextWrapper, tipCommentBodyLayout, Gravity.END);
+                    popupMenu.getMenuInflater().inflate(R.menu.comment_pop_up_menu, popupMenu.getMenu());
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        popupMenu.setForceShowIcon(true);
                     }
+                    popupMenu.show();
+                    popupMenu.setOnMenuItemClickListener(item -> {
+                        if (item.getItemId() == R.id.tipCommentRemoveBtn) {
+                            removeComment(commentsList.get(finalI).getId());
+                            return true;
+                        }
+                        return false;
+
+                    });
+                    return false;
                 });
             }
             views.add(view);
         }
 
         for(int i = 0; i<views.size(); i++)
-            insertPoint.addView((View) views.get(i));
+            insertPoint.addView(views.get(i));
     }
 
     @NotNull

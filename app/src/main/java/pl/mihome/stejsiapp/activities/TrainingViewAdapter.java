@@ -1,17 +1,15 @@
 package pl.mihome.stejsiapp.activities;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.icu.text.SimpleDateFormat;
-import android.os.Bundle;
 import android.provider.CalendarContract;
 import android.provider.Settings;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -30,7 +28,6 @@ import com.androidnetworking.common.Priority;
 import com.androidnetworking.error.ANError;
 import com.androidnetworking.interfaces.OkHttpResponseListener;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
@@ -48,6 +45,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import app.StejsiApplication;
 import model.Token;
 import model.Training;
 import model.TrainingPackage;
@@ -62,12 +60,14 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
     private String currentTime;
     private Token currentToken;
     private BottomAppBar bottomAppBar;
+    private StejsiApplication app;
 
-    TrainingViewAdapter(List<TrainingPackage> trainingPackages, Bundle bundle, BottomAppBar bottomAppBar) {
+    TrainingViewAdapter(List<TrainingPackage> trainingPackages, StejsiApplication app, BottomAppBar bottomAppBar) {
         this.trainingPackages = trainingPackages;
-        this.currentTime = bundle.getString(LoaderActivity.CURRENT_TIME_HEADER);
-        this.currentToken = (Token)bundle.getSerializable(StartActivity.TOKEN);
+        this.currentTime = app.loadStoredDataCurrentTime();
+        this.currentToken = app.loadStoredDataToken();
         this.bottomAppBar = bottomAppBar;
+        this.app = app;
     }
 
 
@@ -76,8 +76,7 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
     public TrainingViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
         View listItem = layoutInflater.inflate(R.layout.training_view_card, parent, false);
-        TrainingViewHolder viewHolder = new TrainingViewHolder(listItem);
-        return viewHolder;
+        return new TrainingViewHolder(listItem);
     }
 
     @Override
@@ -87,13 +86,11 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
         holder.trainingsAmountTxt.setText(holder.itemView.getResources().getString(R.string.trainings_amount, " " + trainingPackage.getPackageType().getAmountOfTrainings()));
         holder.trainingsAmountToPlanTxt.setText(holder.itemView.getResources().getString(R.string.left_to_plan, " " + trainingPackage.getAmountToPlan()));
         holder.trainingsDoneAmountTxt.setText(holder.itemView.getResources().getString(R.string.trainings_done_amount, " " + trainingPackage.getAmountTrainingsDone()));
-//        holder.trainingsDoneAmountTxt.setText(trainingPackage.getId().toString());
         holder.packageDesc.setText(trainingPackage.getPackageType().getDescription());
         holder.expandedLayout.setVisibility(View.GONE);
         holder.expandLessBtn.setVisibility(View.GONE);
         holder.expandMoreBtn.setVisibility(View.VISIBLE);
 
-//        holder.test.setText(trainingPackage.getStatus(currentTime).toString());
 
         /*
             Tutaj okreslamy wyświetlanie ważności pakietu
@@ -112,10 +109,10 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
             holder.validDueTxt.setText(R.string.out_dated);
         }
         else if(trainingPackage.getStatus(currentTime) == TrainingPackageStatus.CLOSE_TO_OUT_DATE && trainingPackage.getValidityDays(currentTime) > 1){
-            holder.validDueTxt.setText(holder.itemView.getResources().getString(R.string.timie_is_running_out, " " + trainingPackage.getValidityDays(currentTime)));
+            holder.validDueTxt.setText(holder.itemView.getResources().getString(R.string.time_is_running_out, " " + trainingPackage.getValidityDays(currentTime)));
         }
         else if(trainingPackage.getStatus(currentTime) == TrainingPackageStatus.CLOSE_TO_OUT_DATE && trainingPackage.getValidityDays(currentTime) == 1){
-            holder.validDueTxt.setText(R.string.timie_is_running_out_one_day);
+            holder.validDueTxt.setText(R.string.time_is_running_out_one_day);
         }
         else {
             holder.validDueTxt.setVisibility(View.GONE);
@@ -159,7 +156,7 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
         else {
             holder.trainingPaidIcon.setVisibility(View.GONE);
             holder.trainingNotPaidIcon.setVisibility(View.VISIBLE);
-            holder.amountDueTxt.setText("Do zapłaty: PLN " + trainingPackage.getPackageType().getPricePLN());
+            holder.amountDueTxt.setText(holder.itemView.getResources().getString(R.string.due_PLN, trainingPackage.getPackageType().getPricePLN()));
             holder.amountDueTxt.setVisibility(View.GONE);
         }
         holder.trainingDoneIcon.setVisibility(View.GONE);
@@ -172,19 +169,14 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
 
         boolean showTrainingsLeft = trainingPackage.getAmountToPlan() > 0 && trainingPackage.isValid(currentTime);
 
-        if(trainingPackage.isCurrentlyUsed()) {
+        if(!trainingPackage.isClosed()) {
             expandCard(holder, true, showTrainingsLeft, !trainingPackage.isPaid());
         }
 
         showTrainings(trainingPackage, holder, currentTime);
 
 
-       View.OnClickListener expandAction = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                    expandCard(holder, !holder.expanded, showTrainingsLeft, !trainingPackage.isPaid());
-                }
-        };
+       View.OnClickListener expandAction = v -> expandCard(holder, !holder.expanded, showTrainingsLeft, !trainingPackage.isPaid());
 
         holder.expandMoreBtn.setOnClickListener(expandAction);
         holder.expandLessBtn.setOnClickListener(expandAction);
@@ -206,47 +198,40 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
 
         LayoutInflater layoutInflater = (LayoutInflater) holder.itemView.getContext().getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         LinearLayout insertPoint = holder.itemView.findViewById(R.id.trainingCardItemsView);
-        List views = new ArrayList();
+        ArrayList<View> views = new ArrayList<>();
         insertPoint.removeAllViews();
         for(int i = 0; i < trainingsList.size(); i++) {
             Training training = trainingsList.get(i);
-            View view = layoutInflater.inflate(R.layout.training_view_training_item, null);
-            MaterialCardView card = view.findViewById(R.id.trainingCard);
+            assert layoutInflater != null;
+            @SuppressLint("InflateParams") View view = layoutInflater.inflate(R.layout.training_view_training_item, null);
             TextView trainingDateTime = view.findViewById(R.id.trainingItemDate);
             TextView trainingStatus = view.findViewById(R.id.trainingItemStatus);
             TextView trainingInfo = view.findViewById(R.id.trainingItemLocationAndLength);
             MaterialButton cnfPresenceBtn = view.findViewById(R.id.trainingItemCnfPresenceBtn);
             MaterialButton cnfScheduleBtn = view.findViewById(R.id.trainingItemCnfScheduleBtn);
             ImageButton popUpMenuBtn = view.findViewById(R.id.trainingCardPopUpMenuBtn);
-            ProgressBar progressBar = view.findViewById(R.id.trainingCardItemProgressBar);
 
             DateTimeFormatter df = DateTimeFormatter.ofPattern("d' 'MMMM' 'YYYY', 'HH:mm");
             trainingDateTime.setText(training.getScheduledFor().format(df));
 
-            popUpMenuBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    ContextWrapper contextWrapper = new ContextThemeWrapper(view.getContext(), R.style.PopUpMenuCustom);
-                    PopupMenu popupMenu = new PopupMenu(contextWrapper, view, Gravity.RIGHT);
-                    popupMenu.getMenuInflater().inflate(R.menu.training_pop_up_menu, popupMenu.getMenu());
-                    popupMenu.show();
-                    popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem item) {
-                            switch (item.getItemId()) {
-                                case (R.id.trainingCardPopUpAddToCalendar):
-                                    addToCalendar(training, holder.itemView);
-                                    return true;
-                                case(R.id.trainingCardPopUpCancel):
-                                    cancelTraining((View)v.getParent(), holder.itemView, training);
-                                    return true;
-                                default:
-                                    return false;
-                            }
+            popUpMenuBtn.setOnClickListener(v -> {
+                ContextWrapper contextWrapper = new ContextThemeWrapper(view.getContext(), R.style.PopUpMenuCustom);
+                PopupMenu popupMenu = new PopupMenu(contextWrapper, view, Gravity.END);
+                popupMenu.getMenuInflater().inflate(R.menu.training_pop_up_menu, popupMenu.getMenu());
+                popupMenu.show();
+                popupMenu.setOnMenuItemClickListener(item -> {
+                    switch (item.getItemId()) {
+                        case (R.id.trainingCardPopUpAddToCalendar):
+                            addToCalendar(training, holder.itemView);
+                            return true;
+                        case(R.id.trainingCardPopUpCancel):
+                            cancelTraining((View)v.getParent(), holder.itemView, training);
+                            return true;
+                        default:
+                            return false;
+                    }
 
-                        }
-                    });
-                }
+                });
             });
 
             if(training.getLocation() == null) {
@@ -262,12 +247,10 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
                 ));
             }
 
-            //test
-            //trainingInfo.setText(trainingsList.get(i).getStatus(currentTime).toString());
 
             TrainingStatus status = training.getStatus(currentTime);
             trainingStatus.setText(status.getDescription());
-            if(status.getDescription() == "") {
+            if(status.getDescription().isEmpty()) {
                 trainingStatus.setVisibility(View.GONE);
             }
             else {
@@ -276,33 +259,24 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
 
             if(status == TrainingStatus.PRESENCE_TO_CONFIRM) {
                 cnfPresenceBtn.setVisibility(View.VISIBLE);
-                cnfPresenceBtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        confirmPresence((View)v.getParent().getParent(), training);
-                    }
-                });
+                cnfPresenceBtn.setOnClickListener(v -> confirmPresence((View)v.getParent().getParent(), training));
             }
             else if(status == TrainingStatus.READY_TO_HAPPEN){
                 popUpMenuBtn.setVisibility(View.VISIBLE);
             }
             else if(status == TrainingStatus.SCHEDULE_TO_CONFIRM) {
                 cnfScheduleBtn.setVisibility(View.VISIBLE);
-                cnfScheduleBtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        confirmSchedule((View)v.getParent().getParent(), training);
-                    }
-                });
+                cnfScheduleBtn.setOnClickListener(v -> confirmSchedule((View)v.getParent().getParent(), training));
             }
 
             views.add(view);
         }
 
         for(int i = 0; i<views.size(); i++)
-            insertPoint.addView((View) views.get(i));
+            insertPoint.addView(views.get(i));
     }
 
+    @SuppressLint("HardwareIds")
     private void confirmPresence(View itemView, Training training) {
         ProgressBar pb = itemView.findViewById(R.id.trainingCardItemProgressBar);
         MaterialButton button = itemView.findViewById(R.id.trainingItemCnfPresenceBtn);
@@ -311,10 +285,10 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
         pb.setVisibility(View.VISIBLE);
         button.setVisibility(View.GONE);
 
-        AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + "/userinput/present/" + training.getId())
+        AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + StartActivity.URL_PRESENCE_CONFIRMATION + training.getId())
                 .setPriority(Priority.HIGH)
-                .addHeaders("token", currentToken.getTokenString())
-                .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
+                .addHeaders(StartActivity.HEADER_NAME_TOKEN, currentToken.getTokenString())
+                .addHeaders(StartActivity.HEADER_NAME_DEVICE_ID, Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
                 .build()
                 .getAsOkHttpResponse(new OkHttpResponseListener() {
                     @Override
@@ -322,16 +296,13 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
                         pb.setVisibility(View.GONE);
                         if(response.code() == 204) {
                             training.setPresenceConfirmedByUser(LocalDateTime.now());
+                            app.replaceTrainingInStoredData(training);
                             if(training.getScheduleConfirmed() == null) {
                                 training.setScheduleConfirmed(LocalDateTime.now());
+                                app.replaceTrainingInStoredData(training);
                             }
                             Snackbar snackbar = Snackbar.make(itemView, R.string.info_presence_confirmed, BaseTransientBottomBar.LENGTH_LONG);
-                            snackbar.setAction(R.string.ok, new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    snackbar.dismiss();
-                                }
-                            });
+                            snackbar.setAction(R.string.ok, v -> snackbar.dismiss());
                             snackbar.show();
                             tv.setVisibility(View.GONE);
                             bottomAppBar.setBadges();
@@ -345,18 +316,14 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
                         pb.setVisibility(View.GONE);
                         button.setVisibility(View.VISIBLE);
                         Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                        snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                snackbar.dismiss();
-                            }
-                        });
+                        snackbar.setAction(R.string.will_try_again_CAP, v -> snackbar.dismiss());
                         snackbar.show();
                     }
                 });
 
     }
 
+    @SuppressLint("HardwareIds")
     private void confirmSchedule(View itemView, Training training) {
         ProgressBar pb = itemView.findViewById(R.id.trainingCardItemProgressBar);
         MaterialButton button = itemView.findViewById(R.id.trainingItemCnfScheduleBtn);
@@ -366,10 +333,10 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
         pb.setVisibility(View.VISIBLE);
         button.setVisibility(View.GONE);
 
-        AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + "/userinput/scheduleconfirmation/" + training.getId())
+        AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + StartActivity.URL_SCHEDULE_CONFIRMATION + training.getId())
                 .setPriority(Priority.HIGH)
-                .addHeaders("token", currentToken.getTokenString())
-                .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
+                .addHeaders(StartActivity.HEADER_NAME_TOKEN, currentToken.getTokenString())
+                .addHeaders(StartActivity.HEADER_NAME_DEVICE_ID, Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
                 .build()
                 .getAsOkHttpResponse(new OkHttpResponseListener() {
                     @Override
@@ -377,13 +344,10 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
                         pb.setVisibility(View.GONE);
                         if(response.code() == 204) {
                             training.setScheduleConfirmed(LocalDateTime.now());
+                            app.replaceTrainingInStoredData(training);
+                            app.replaceTrainingInStoredData(training);
                             Snackbar snackbar = Snackbar.make(itemView, R.string.info_schedule_confirmed, BaseTransientBottomBar.LENGTH_LONG);
-                            snackbar.setAction(R.string.ok, new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    snackbar.dismiss();
-                                }
-                            });
+                            snackbar.setAction(R.string.ok, v -> snackbar.dismiss());
                             snackbar.show();
                             ib.setVisibility(View.VISIBLE);
                             tv.setVisibility(View.GONE);
@@ -398,75 +362,59 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
                         pb.setVisibility(View.GONE);
                         button.setVisibility(View.VISIBLE);
                         Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                        snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                snackbar.dismiss();
-                            }
-                        });
+                        snackbar.setAction(R.string.will_try_again_CAP, v -> snackbar.dismiss());
                         snackbar.show();
                     }
                 });
     }
 
 
+    @SuppressLint("HardwareIds")
     private void cancelTraining(View itemView, View globalView, Training training) {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(globalView.getContext());
-        builder.setTitle("Odwoływanie treningu");
+        builder.setTitle(R.string.training_cancel);
         builder.setCancelable(true);
         builder.setIcon(R.drawable.ic_cancel_gray_24dp);
         builder.setMessage(R.string.cancel_confirmation);
-        builder.setPositiveButton(R.string.cancel_confirmed, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                ProgressBar pb = itemView.findViewById(R.id.trainingCardItemProgressBar);
-                ImageButton ib = itemView.findViewById(R.id.trainingCardPopUpMenuBtn);
-                TextView tv = globalView.findViewById(R.id.trainingItemStatus);
-                pb.setVisibility(View.VISIBLE);
-                ib.setVisibility(View.GONE);
-                AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + "/userinput/cancel/" + training.getId())
-                        .setPriority(Priority.MEDIUM)
-                        .addHeaders("token", currentToken.getTokenString())
-                        .addHeaders("deviceId", Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
-                        .build()
-                        .getAsOkHttpResponse(new OkHttpResponseListener() {
-                            @Override
-                            public void onResponse(Response response) {
-                                pb.setVisibility(View.GONE);
-                                if(response.code() == 204) {
-                                    training.setWhenCanceled(LocalDateTime.now());
-                                    tv.setText(training.getStatus(currentTime).getDescription());
-                                    tv.setVisibility(View.VISIBLE);
-                                    Snackbar snackbar = Snackbar.make(itemView, R.string.cancel_done, BaseTransientBottomBar.LENGTH_LONG);
-                                    snackbar.setAction(R.string.ok, new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            snackbar.dismiss();
-                                        }
-                                    });
-                                    snackbar.show();
-                                }
-                                else {
-                                    pb.setVisibility(View.GONE);
-                                    ib.setVisibility(View.VISIBLE);
-                                }
-                            }
-
-                            @Override
-                            public void onError(ANError anError) {
-                                pb.setVisibility(View.GONE);
-                                ib.setVisibility(View.VISIBLE);
-                                Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                                snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        snackbar.dismiss();
-                                    }
-                                });
+        builder.setPositiveButton(R.string.cancel_confirmed, (dialog, which) -> {
+            ProgressBar pb = itemView.findViewById(R.id.trainingCardItemProgressBar);
+            ImageButton ib = itemView.findViewById(R.id.trainingCardPopUpMenuBtn);
+            TextView tv = globalView.findViewById(R.id.trainingItemStatus);
+            pb.setVisibility(View.VISIBLE);
+            ib.setVisibility(View.GONE);
+            AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + StartActivity.URL_CANCEL_TRAINING + training.getId())
+                    .setPriority(Priority.MEDIUM)
+                    .addHeaders(StartActivity.HEADER_NAME_TOKEN, currentToken.getTokenString())
+                    .addHeaders(StartActivity.HEADER_NAME_DEVICE_ID, Settings.Secure.getString(itemView.getContext().getContentResolver(), Settings.Secure.ANDROID_ID))
+                    .build()
+                    .getAsOkHttpResponse(new OkHttpResponseListener() {
+                        @Override
+                        public void onResponse(Response response) {
+                            pb.setVisibility(View.GONE);
+                            if(response.code() == 204) {
+                                training.setWhenCanceled(LocalDateTime.now());
+                                app.replaceTrainingInStoredData(training);
+                                tv.setText(training.getStatus(currentTime).getDescription());
+                                tv.setVisibility(View.VISIBLE);
+                                Snackbar snackbar = Snackbar.make(itemView, R.string.cancel_done, BaseTransientBottomBar.LENGTH_LONG);
+                                snackbar.setAction(R.string.ok, v -> snackbar.dismiss());
                                 snackbar.show();
                             }
-                        });
-            }
+                            else {
+                                pb.setVisibility(View.GONE);
+                                ib.setVisibility(View.VISIBLE);
+                            }
+                        }
+
+                        @Override
+                        public void onError(ANError anError) {
+                            pb.setVisibility(View.GONE);
+                            ib.setVisibility(View.VISIBLE);
+                            Snackbar snackbar = Snackbar.make(itemView, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
+                            snackbar.setAction(R.string.will_try_again_CAP, v -> snackbar.dismiss());
+                            snackbar.show();
+                        }
+                    });
         });
 
         builder.show();
@@ -482,7 +430,7 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
     }
 
     private void addToCalendar(Training training, View itemView) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+        SimpleDateFormat sdf = new SimpleDateFormat(app.getString(R.string.add_to_calendar_sdf));
         try {
             Date date = sdf.parse(training.getScheduledFor().toString());
 
@@ -496,8 +444,8 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
                     .setData(CalendarContract.Events.CONTENT_URI)
                     .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginOfEvent.getTimeInMillis())
                     .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endOfEvent.getTimeInMillis())
-                    .putExtra(CalendarContract.Events.TITLE, "Trening personalny ze Stejsi")
-                    .putExtra(CalendarContract.Events.DESCRIPTION, "Będziemy trenować! Zapraszam serdecznie na nasz wspólny trening.")
+                    .putExtra(CalendarContract.Events.TITLE, app.getString(R.string.calendar_event_title))
+                    .putExtra(CalendarContract.Events.DESCRIPTION, app.getString(R.string.calendar_event_desc))
                     .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
                     .putExtra(CalendarContract.Events.HAS_ALARM, 0);
             if (training.getLocation() != null) {
@@ -546,7 +494,7 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
         return trainingPackages.size();
     }
 
-    public static class TrainingViewHolder extends RecyclerView.ViewHolder {
+    static class TrainingViewHolder extends RecyclerView.ViewHolder {
 
         private final TextView packageTitle;
         private final TextView trainingsAmountTxt;
@@ -569,7 +517,7 @@ public class TrainingViewAdapter extends RecyclerView.Adapter<TrainingViewAdapte
         private boolean expanded;
 
 
-        public TrainingViewHolder(@NonNull View itemView) {
+        TrainingViewHolder(@NonNull View itemView) {
             super(itemView);
 
             packageTitle = itemView.findViewById(R.id.trainingCardTitle);

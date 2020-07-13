@@ -6,5 +6,5 @@ public enum TrainingPackageStatus {
     HAS_TRAININGS_TO_CONFIRM_SCHEDULE,
     CLOSE_TO_OUT_DATE,
     OUT_DATED,
-    USED;
+    USED
 }

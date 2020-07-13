@@ -11,7 +11,7 @@ public enum UserRank implements Serializable {
 
     private final String description;
 
-    private UserRank(String description) {
+    UserRank(String description) {
         this.description = description;
     }
 

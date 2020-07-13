@@ -11,7 +11,6 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -23,20 +22,16 @@ import com.androidnetworking.interfaces.StringRequestListener;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 import app.StejsiApplication;
-import model.MainBundleBuilder;
 import model.Tip;
 import model.Token;
 import model.User;
@@ -77,50 +72,48 @@ public class LoaderActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.loader_progress);
         tryAgainBtn = findViewById(R.id.loaderTryAgainBtn);
 
-        currentToken = (Token) getIntent().getExtras().get(StartActivity.TOKEN);
+        currentToken = (Token) Objects.requireNonNull(getIntent().getExtras()).get(StartActivity.TOKEN);
         startWaiting();
         //registerFCMToken(); wydaje się byc niepotrzebne
         loadUserData();
 
     }
 
+    @SuppressLint("HardwareIds")
     private void registerFCMToken() {
         boolean tokenFCMIsRegistered = sharedPreferences.getBoolean(FCM_TOKEN_REGISTERED, false);
         if(!tokenFCMIsRegistered) {
             FirebaseInstanceId.getInstance().getInstanceId()
-                    .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
-                        @Override
-                        public void onComplete(@NonNull Task<InstanceIdResult> task) {
-                            if(!task.isComplete()) {
-                                Log.w("FCM_TOKEN", "Unsuccessful try to bring back FCM token. Registration to web server given up.");
+                    .addOnCompleteListener(task -> {
+                        if(!task.isComplete()) {
+                            Log.w("FCM_TOKEN", "Unsuccessful try to bring back FCM token. Registration to web server given up.");
+                        }
+                        else {
+                            JSONObject jsonObject = new JSONObject();
+                            try {
+                                jsonObject.put("tokenFCM", Objects.requireNonNull(task.getResult()).getToken());
                             }
-                            else {
-                                JSONObject jsonObject = new JSONObject();
-                                try {
-                                    jsonObject.put("tokenFCM", task.getResult().getToken());
-                                }
-                                catch (JSONException ex) {
-                                    ex.printStackTrace();
-                                }
-                                AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + "/userinput/newfcmtoken")
-                                        .setPriority(Priority.LOW)
-                                        .addHeaders("token", currentToken.getTokenString())
-                                        .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
-                                        .addJSONObjectBody(jsonObject)
-                                        .build()
-                                        .getAsString(new StringRequestListener() {
-                                            @Override
-                                            public void onResponse(String response) {
-                                                updateSharedPreferencesOnFCMTokenStatus(true);
-                                                Log.i("FCM_TOKEN", "FCM token registered after discovering registration missing.");
-                                            }
-                                            @Override
-                                            public void onError(ANError anError) {
-                                                updateSharedPreferencesOnFCMTokenStatus(false);
-                                                Log.w("FCM_TOKEN", "FCM token registration unsuccessful after discovering registration missing.");
-                                            }
-                                        });
+                            catch (JSONException ex) {
+                                ex.printStackTrace();
                             }
+                            AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + StartActivity.URL_REGISTER_FCM_TOKEN)
+                                    .setPriority(Priority.LOW)
+                                    .addHeaders("token", currentToken.getTokenString())
+                                    .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
+                                    .addJSONObjectBody(jsonObject)
+                                    .build()
+                                    .getAsString(new StringRequestListener() {
+                                        @Override
+                                        public void onResponse(String response) {
+                                            updateSharedPreferencesOnFCMTokenStatus(true);
+                                            Log.i("FCM_TOKEN", "FCM token registered after discovering registration missing.");
+                                        }
+                                        @Override
+                                        public void onError(ANError anError) {
+                                            updateSharedPreferencesOnFCMTokenStatus(false);
+                                            Log.w("FCM_TOKEN", "FCM token registration unsuccessful after discovering registration missing.");
+                                        }
+                                    });
                         }
                     });
         }
@@ -136,7 +129,7 @@ public class LoaderActivity extends AppCompatActivity {
 
     @SuppressLint("HardwareIds")
     private void loadUserData() {
-        AndroidNetworking.get(StartActivity.WEB_SERVER_URL + "/userinput/userdata")
+        AndroidNetworking.get(StartActivity.WEB_SERVER_URL + StartActivity.URL_USERDATA_GET)
                 .addHeaders("token", currentToken.getTokenString())
                 .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
                 .build()
@@ -161,13 +154,10 @@ public class LoaderActivity extends AppCompatActivity {
                     public void onError(ANError anError) {
                         anError.getErrorBody();
                         tryAgainBtn.setVisibility(View.VISIBLE);
-                        tryAgainBtn.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                tryAgainBtn.setVisibility(View.GONE);
-                                startWaiting();
-                                loadUserData();
-                            }
+                        tryAgainBtn.setOnClickListener(v -> {
+                            tryAgainBtn.setVisibility(View.GONE);
+                            startWaiting();
+                            loadUserData();
                         });
                     }
                 });
@@ -176,20 +166,12 @@ public class LoaderActivity extends AppCompatActivity {
 
     private void startWaiting() {
         final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                waitTxt.setText(R.string.info_waiting_too_long);
-            }
-        }, 5000);
+        handler.postDelayed(() -> waitTxt.setText(R.string.info_waiting_too_long), 5000);
 
         final Handler handler_aborted = new Handler();
-        handler_aborted.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                progressBar.setVisibility(View.INVISIBLE);
-                waitTxt.setText(R.string.error_no_server_connection);
-            }
+        handler_aborted.postDelayed(() -> {
+            progressBar.setVisibility(View.INVISIBLE);
+            waitTxt.setText(R.string.error_no_server_connection);
         }, 15000);
 
     }
@@ -199,9 +181,10 @@ public class LoaderActivity extends AppCompatActivity {
 
     private void closeActivity() {
         Intent intent = new Intent(LoaderActivity.this, MainPageActivity.class);
-        Bundle bundleOfTips = new Bundle();
-        bundleOfTips.putSerializable(TIPS_LIST, (Serializable)currentTipsList);
-        app.setMainBundle(MainBundleBuilder.getCurrentBundle(currentUser, currentToken, currentTime, bundleOfTips));
+        app.saveStoredDataUser(currentUser);
+        app.saveStoredDataToken(currentToken);
+        app.saveStoredDataCurrentTime(currentTime);
+        app.saveStoredDataTips(currentTipsList);
         startActivity(intent);
         finish();
     }

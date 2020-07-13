@@ -1,7 +1,10 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.threetenbp.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.threetenbp.ser.LocalDateTimeSerializer;
 
 import org.threeten.bp.LocalDateTime;
 
@@ -19,6 +22,7 @@ public class Tip implements MainViewElement, Serializable {
     private boolean localImagePresent;
     private Set<TipComment> comments;
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime whenCreated;
     private TipReadStatus tipStatusByUser;
 
@@ -94,6 +98,7 @@ public class Tip implements MainViewElement, Serializable {
 
 
     @Override
+    @JsonIgnore
     public int getModelType() {
         return MainViewElement.TIP_VIEW_TYPE;
     }

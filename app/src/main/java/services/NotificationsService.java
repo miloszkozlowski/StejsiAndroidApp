@@ -1,5 +1,6 @@
 package services;
 
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.provider.Settings;
 
@@ -27,9 +28,9 @@ public class NotificationsService extends FirebaseMessagingService {
 
     public static final String FCM_TOKEN_REGISTERED = "FCM_TOKEN_REGISTERED";
     public static final String FCM_TOKEN_VALUE = "FCM_TOKEN_VALUE";
-    private Token currentToken;
     private SharedPreferences sharedPreferences;
 
+    @SuppressLint("HardwareIds")
     @Override
     public void onNewToken(@NonNull String s) {
         super.onNewToken(s);
@@ -38,7 +39,7 @@ public class NotificationsService extends FirebaseMessagingService {
 
         if(gsonString != null) {
             Gson gson = new Gson();
-            currentToken = gson.fromJson(gsonString, Token.class);
+            Token currentToken = gson.fromJson(gsonString, Token.class);
 
             JSONObject jsonObject = new JSONObject();
             try {

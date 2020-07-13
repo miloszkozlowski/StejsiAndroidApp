@@ -1,7 +1,9 @@
 package model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.threetenbp.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.threetenbp.ser.LocalDateTimeSerializer;
 
 import org.threeten.bp.LocalDateTime;
 
@@ -14,6 +16,7 @@ public class TipComment implements Serializable {
     private Long authorId;
     private String body;
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime whenCreated;
 
     public TipComment() {

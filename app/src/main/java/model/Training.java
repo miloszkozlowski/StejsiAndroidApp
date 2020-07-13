@@ -1,9 +1,13 @@
 package model;
 
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.threetenbp.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.threetenbp.ser.LocalDateTimeSerializer;
 
 import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.format.DateTimeFormatter;
@@ -11,15 +15,34 @@ import org.threeten.bp.format.DateTimeFormatter;
 import java.io.Serializable;
 
 
+
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id",
+        scope = Training.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Training implements Serializable {
 
-    private long id;
+    private Long id;
 
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime scheduledFor;
+
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime markedAsDone;
+
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime scheduleConfirmed;
+
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime presenceConfirmedByUser;
+
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime whenCanceled;
     private TrainingPackage trainingPackage;
     private TrainingLocation location;
@@ -28,31 +51,26 @@ public class Training implements Serializable {
     public Training() {
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     public LocalDateTime getScheduledFor() {
         return scheduledFor;
     }
 
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     public LocalDateTime getMarkedAsDone() {
         return markedAsDone;
     }
 
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     public LocalDateTime getScheduleConfirmed() {
         return scheduleConfirmed;
     }
 
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     public LocalDateTime getWhenCanceled() {
         return whenCanceled;
     }
 
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     public LocalDateTime getPresenceConfirmedByUser() {
         return presenceConfirmedByUser;
     }

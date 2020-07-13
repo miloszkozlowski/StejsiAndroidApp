@@ -1,11 +1,12 @@
 package pl.mihome.stejsiapp.activities;
 
-import android.content.DialogInterface;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
@@ -35,14 +36,13 @@ import pl.mihome.stejsiapp.R;
 
 public class UserActivity extends AppCompatActivity {
 
+    public static final String USER_SETTING_TIP_NOTIFICATIONS = "tipnotification";
+
     private StejsiApplication app;
     private User currentUser;
-    private String currentRank;
     private Token currentToken;
     private String currentTime;
-    private Bundle mainBundle;
 
-    private ImageButton closeBtn;
     private TextView userNameAndSurname;
     private TextView userEmail;
     private TextView userPhone;
@@ -64,7 +64,7 @@ public class UserActivity extends AppCompatActivity {
         setContentView(R.layout.user_activity);
 
         app = (StejsiApplication) getApplication();
-        closeBtn = findViewById(R.id.userCloseBtn);
+        ImageButton closeBtn = findViewById(R.id.userCloseBtn);
         userNameAndSurname = findViewById(R.id.userNameAndSurname);
         userEmail = findViewById(R.id.userEmail);
         userPhone = findViewById(R.id.userPhoneNumber);
@@ -79,22 +79,17 @@ public class UserActivity extends AppCompatActivity {
         userSettingTipsNotifications = findViewById(R.id.userSettingTipsNotifications);
         rankRatingBar = findViewById(R.id.userRankStars);
 
-        closeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        closeBtn.setOnClickListener(v -> finish());
 
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mainBundle = app.getMainBundle();
-        currentUser = (User) mainBundle.getSerializable(LoaderActivity.USER);
-        currentToken = (Token) mainBundle.getSerializable(StartActivity.TOKEN);
-        currentTime = mainBundle.getString(LoaderActivity.CURRENT_TIME_HEADER);
+//        mainBundle = app.getMainBundle();
+        currentUser = app.loadStoredDataUser();
+        currentToken = app.loadStoredDataToken();
+        currentTime = app.loadStoredDataCurrentTime();
 
         userNameAndSurname.setText(currentUser.getName() + " " + currentUser.getSurname());
         userEmail.setText(currentUser.getEmail());
@@ -110,87 +105,100 @@ public class UserActivity extends AppCompatActivity {
         userSettingTipsNotifications.setChecked(currentUser.isSettingTipNotifications());
 
 
-
-
-        logoutButton.setOnClickListener(new View.OnClickListener() {
+        userSettingTipsNotifications.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onClick(View v) {
-                logout();
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                userSettingTipsNotifications.setOnCheckedChangeListener(null);
+                changeToggleableSetting(USER_SETTING_TIP_NOTIFICATIONS, isChecked, userSettingTipsNotifications);
+                userSettingTipsNotifications.setOnCheckedChangeListener(this);
             }
         });
+
+        logoutButton.setOnClickListener(v -> logout());
     }
 
-    private int getRankStars() {
-        switch(currentRank) {
-            case("Leser"):
-                return 1;
-            case("Żółtodziób"):
-                return 2;
-            case("Fit Malina"):
-                return 3;
-            case("Osiłek"):
-                return 4;
-            case("Kulturysta"):
-                return 5;
-            default:
-                return 0;
+    @SuppressLint("HardwareIds")
+    private void changeToggleableSetting(String settingName, boolean settingStatus, SwitchMaterial switchItem) {
+        switchItem.setEnabled(false);
+        AndroidNetworking.patch(StartActivity.WEB_SERVER_URL + "/userinput/setting/" + settingName + "/" + settingStatus)
+                .setPriority(Priority.LOW)
+                .addHeaders("token", currentToken.getTokenString())
+                .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
+                .build()
+                .getAsOkHttpResponse(new OkHttpResponseListener() {
+                    @Override
+                    public void onResponse(Response response) {
+
+                        if(response.code() == 204) {
+                            switchItem.setEnabled(true);
+                            switchItem.setChecked(settingStatus);
+                            changeCurrentUserSetting(settingName, settingStatus);
+                        }
+                        else {
+                            onError(new ANError());
+                        }
+                    }
+
+                    @Override
+                    public void onError(ANError anError) {
+                        switchItem.setEnabled(true);
+                        switchItem.setChecked(!settingStatus);
+                        Snackbar snackbar = Snackbar.make(parentLayout, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
+                        snackbar.setAction(R.string.will_try_again_CAP, v -> snackbar.dismiss());
+                        snackbar.show();
+                    }
+                });
+    }
+
+    private void changeCurrentUserSetting(String settingName, boolean boolValue) {
+        if (USER_SETTING_TIP_NOTIFICATIONS.equals(settingName)) {
+            currentUser.setSettingTipNotifications(boolValue);
         }
     }
 
+
+    @SuppressLint("HardwareIds")
     private void logout() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         builder.setTitle(R.string.logout_info);
         builder.setCancelable(true);
         builder.setIcon(R.drawable.ic_stop_black_24dp);
         builder.setMessage(R.string.logout_confirm_info);
-        builder.setPositiveButton(R.string.logout_confirm, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                logoutProgress.setVisibility(View.VISIBLE);
-                logoutButton.setEnabled(false);
-                AndroidNetworking.get(StartActivity.WEB_SERVER_URL + "/userinput/logout")
-                        .setPriority(Priority.HIGH)
-                        .addHeaders("token", currentToken.getTokenString())
-                        .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
-                        .build()
-                        .getAsOkHttpResponse(new OkHttpResponseListener() {
-                            @Override
-                            public void onResponse(Response response) {
-                                if(response.code() == 204) {
-                                    SharedPreferences sharedPreferences = app.getSharedPreferences(StartActivity.LOGIN_DATA, MODE_PRIVATE);
-                                    sharedPreferences.edit().clear().apply();
-                                    Intent intent = new Intent(getApplicationContext(), StartActivity.class);
-                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                    startActivity(intent);
-                                    finish();
-                                }
-                                else {
-                                    onError(new ANError());
-                                }
+        builder.setPositiveButton(R.string.logout_confirm, (dialog, which) -> {
+            logoutProgress.setVisibility(View.VISIBLE);
+            logoutButton.setEnabled(false);
+            AndroidNetworking.get(StartActivity.WEB_SERVER_URL + "/userinput/logout")
+                    .setPriority(Priority.HIGH)
+                    .addHeaders("token", currentToken.getTokenString())
+                    .addHeaders("deviceId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
+                    .build()
+                    .getAsOkHttpResponse(new OkHttpResponseListener() {
+                        @Override
+                        public void onResponse(Response response) {
+                            if(response.code() == 204) {
+                                SharedPreferences sharedPreferences = app.getSharedPreferences(StartActivity.LOGIN_DATA, MODE_PRIVATE);
+                                sharedPreferences.edit().clear().apply();
+                                Intent intent = new Intent(getApplicationContext(), StartActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(intent);
+                                finish();
                             }
+                            else {
+                                onError(new ANError());
+                            }
+                        }
 
-                            @Override
-                            public void onError(ANError anError) {
-                                logoutProgress.setVisibility(View.GONE);
-                                logoutButton.setEnabled(true);
-                                Snackbar snackbar = Snackbar.make(parentLayout, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
-                                snackbar.setAction(R.string.will_try_again_CAP, new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        snackbar.dismiss();
-                                    }
-                                });
-                                snackbar.show();
-                            }
-                        });
-            }
+                        @Override
+                        public void onError(ANError anError) {
+                            logoutProgress.setVisibility(View.GONE);
+                            logoutButton.setEnabled(true);
+                            Snackbar snackbar = Snackbar.make(parentLayout, R.string.error_sth_went_wrong, BaseTransientBottomBar.LENGTH_LONG);
+                            snackbar.setAction(R.string.will_try_again_CAP, v -> snackbar.dismiss());
+                            snackbar.show();
+                        }
+                    });
         });
-        builder.setNegativeButton(R.string.exit_cancel, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
+        builder.setNegativeButton(R.string.exit_cancel, (dialog, which) -> dialog.dismiss());
 
         builder.show();
     }

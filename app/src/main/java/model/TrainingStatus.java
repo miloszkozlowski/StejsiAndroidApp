@@ -11,12 +11,12 @@ public enum TrainingStatus {
 
     private final String description;
 
-    private TrainingStatus(String description) {
+    TrainingStatus(String description) {
         this.description = description;
     }
 
     public String getDescription() {
-        if(description != "") {
+        if(description.isEmpty()) {
             return description;
         }
         return "";
